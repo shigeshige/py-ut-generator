@@ -31,7 +31,7 @@ now No command line or shell.
 call python dilectry.
 
 ```
-python pyutgen "Input File Name"
+python pyutgen.py "Input File Name"
 ```
 
 Input File
