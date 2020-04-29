@@ -14,7 +14,7 @@ def get_function(modeles):
     """
     funcs = []
     for stm in modeles.body:
-        if _equals(stm,  const.AST_FUCNTION):
+        if _equals(stm, const.AST_FUCNTION):
             funcs.append(stm)
     return funcs
 
@@ -40,7 +40,7 @@ def parse_func(func, pkg, mdn, modu):
     args = get_func_arg(func)
     inits = '\n'.join([templates.parse_varis(arg, 'None') for arg in args])
     name = func.name
-    return templates.parse_func(func.name, pkg, mdn, inits, has_return, args)
+    return templates.parse_func(name, pkg, mdn, inits, has_return, args)
 
 
 def has_return_val(func):
@@ -72,7 +72,11 @@ def get_calls(func):
             # print('---cal--')
             if stm.func.__class__.__name__ == const.AST_NAME:
                 calls.append(['', stm.func.id])
-            if _equals(stm.func, const.AST_ATTRIBUTE) and _equals(stm.func.value, const.AST_NAME):
+            if _equals(
+                    stm.func,
+                    const.AST_ATTRIBUTE) and _equals(
+                    stm.func.value,
+                    const.AST_NAME):
                 calls.append([stm.func.value.id, stm.func.attr])
             # TODO: has return
     return calls
