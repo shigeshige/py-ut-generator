@@ -4,7 +4,6 @@ This project uses ast module to generate.
 
 ### feature
 
-* customize parameter options.
 * create test python file in tests package.
 * create pytest function from each function.
 * create mock patch.
@@ -45,6 +44,7 @@ def test_get_function():
 ```
 ### for future
 
+* customize parameter options.
 * write return_value.
 * call default and pass test.
 * genarete various parameters for test.
