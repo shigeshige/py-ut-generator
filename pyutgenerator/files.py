@@ -2,20 +2,27 @@
 copyrigth https://github.com/shigeshige/py-ut-generator
 """
 
-import ast
 import os
 import pathlib
 
 
 def read_file(file_name):
+    """
+    read utf8 txt file.
+    """
     with open(file_name, 'r', encoding='utf-8') as f:
         return f.read()
 
-def create_ast(file_name):
+
+def write_file(file_name, txt):
     """
+    write txt file.
+    and mkdir directory
     """
-    src = read_file(file_name)
-    return ast.parse(src, file_name)
+    dirs = os.path.dirname(file_name)
+    os.makedirs(dirs, exist_ok=True)
+    with open(file_name, mode='w') as f:
+        f.write(txt)
 
 
 def get_package_moduel(file_name):
@@ -30,3 +37,10 @@ def get_package_moduel(file_name):
     if os.path.basename(file_name) == pkg:
         pkg = ''
     return pkg, modu
+
+
+def get_test_file_name(pkg, mdn):
+    """
+    get test file name from input file.
+    """
+    return 'tests/' + pkg.replace('.', '/') + '/test_' + mdn + '.py'

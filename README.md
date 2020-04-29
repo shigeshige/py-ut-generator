@@ -39,7 +39,7 @@ Input File
 
 ```
 
-Putput File
+Output File
 ```
 ```
 
