@@ -34,6 +34,7 @@ STR_WITH = '    with\\'
 STR_MOCK = '            patch({}) as {}'
 
 STR_RC = '\n'
+STR_ASSERT = '        assert {}'
 
 
 def parse_import(imps):
@@ -42,7 +43,7 @@ def parse_import(imps):
     return TEMP_IMPORT.format(imps)
 
 
-def parse_func(name, pkg, mdn, inits, has_return, args, mocks):
+def parse_func(name, pkg, mdn, inits, has_return, args, mocks, checks):
     """
     """
     runs = ''
@@ -51,7 +52,7 @@ def parse_func(name, pkg, mdn, inits, has_return, args, mocks):
     else:
         runs = STR_RUNS.format(mdn, name, ', '.join(args))
     mck = parse_mocks(mocks)
-    return TEMP_FUNC.format(STR_PRE_FUNC + name, inits, mck, runs, '')
+    return TEMP_FUNC.format(STR_PRE_FUNC + name, inits, mck, runs, checks)
 
 
 def parse_varis(name, value):
@@ -74,3 +75,9 @@ def parse_mocks(mocks):
         else:
             txt[-1] += ',\\'
     return STR_RC.join(txt)
+
+
+def parse_assert(asserts):
+    """
+    """
+    return STR_RC.join([STR_ASSERT.format(asst) for asst in asserts])

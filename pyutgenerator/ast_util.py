@@ -47,7 +47,18 @@ def parse_func(func, pkg, mdn, modu):
     args = get_func_arg(func)
     inits = '\n'.join([templates.parse_varis(arg, 'None') for arg in args])
     name = func.name
-    return templates.parse_func(name, pkg, mdn, inits, has_return, args, mocks)
+    checks = ''
+    if has_return:
+        checks = templates.parse_assert(['ret'])
+    return templates.parse_func(
+        name,
+        pkg,
+        mdn,
+        inits,
+        has_return,
+        args,
+        mocks,
+        checks)
 
 
 def has_return_val(func):

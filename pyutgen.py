@@ -26,8 +26,7 @@ def output(file_name, txt):
 
 
 def main():
-    # f = sys.argv[1]
-    f = 'pyutgenerator\\ast_util.py'
+    f = sys.argv[1]
     parse_file(f)
     return
 
