@@ -10,6 +10,7 @@ from pyutgenerator import const, templates, files
 
 def create_ast(file_name):
     """
+    parse source file.
     """
     src = files.read_file(file_name)
     return ast.parse(src, file_name)
@@ -141,6 +142,6 @@ def names_str(stm):
 
 def _equals(stm, class_name):
     """
-    クラス名の確認
+    check class name.\
     """
     return stm.__class__.__name__ == class_name
