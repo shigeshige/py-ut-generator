@@ -17,7 +17,6 @@ def create_ast(file_name):
 
 def get_function(modeles):
     """
-    file:///./pyutgenerator/const.py
     """
     funcs = []
     for stm in modeles.body:
@@ -43,13 +42,13 @@ def parse_func(func, pkg, mdn, modu):
     has_return = has_return_val(func)
     # print(func.name)
     calls = get_calls(func)
-    mocks = get_mocks(calls, modu)
+    mocks = get_mocks(calls, modu, pkg, mdn)
     args = get_func_arg(func)
     inits = '\n'.join([templates.parse_varis(arg, 'None') for arg in args])
     name = func.name
     checks = ''
     if has_return:
-        checks = templates.parse_assert(['ret'])
+        checks = templates.parse_assert(['ret'], mocks)
     return templates.parse_func(
         name,
         pkg,
@@ -88,7 +87,7 @@ def get_calls(func):
     for stm in ast.walk(func):
         if _equals(stm, const.AST_CALL):
             # print('---cal--')
-            if stm.func.__class__.__name__ == const.AST_NAME:
+            if _equals(stm.func, const.AST_NAME):
                 calls.append(['', stm.func.id])
             if _equals(
                     stm.func,
@@ -100,7 +99,14 @@ def get_calls(func):
     return calls
 
 
-def get_mocks(calls, modu):
+def _get_funcs(modu):
+    """
+    get function list
+    """
+    return [stm for stm in ast.walk(modu) if _equals(stm, const.AST_FUCNTION)]
+
+
+def get_mocks(calls, modu, pkg, mdn):
     """
     呼び出し先のモックを作成する。
     """
@@ -111,15 +117,21 @@ def get_mocks(calls, modu):
             if _equals(stm, const.AST_IMPORT):
                 if names_str(stm) == c[1] and not c[0]:
                     # import xxx
-                    # print(names_str(stm))
                     import_flg = True
                 elif names_str(stm) == c[0]:
                     mocks.append([c[0] + '.' + c[1]])
                     import_flg = True
             if _equals(stm, const.AST_IMPORT_FROM):
-                # print(stm)
+                # from xxx inport yyy
                 if c[0] in list(map(lambda x: x.name, stm.names)):
                     mocks.append([stm.module + '.' + c[0] + '.' + c[1]])
+        if import_flg:
+            continue
+        for stm in get_function(modu):
+            # def xxx():
+            if not c[0] and c[1] == stm.name:
+                mocks.append([pkg + '.' + mdn + '.' + c[1]])
+
     return mocks
 
 

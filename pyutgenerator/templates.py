@@ -17,7 +17,14 @@ def {}():
     # run
 {}
 {}
+"""
+
+TEMP_FUNC_CHECK = """
     # check
+{}
+"""
+TEMP_FUNC_CHECK_TAB = """
+        # check
 {}
 """
 
@@ -31,10 +38,12 @@ STR_RUNS = '    {}.{}({})'
 STR_RUNS_RETURN = '    ret = {}.{}({})'
 
 STR_WITH = '    with\\'
-STR_MOCK = '            patch({}) as {}'
+STR_MOCK = "            patch('{}') as {}"
 
 STR_RC = '\n'
-STR_ASSERT = '        assert {}'
+STR_ASSERT = '    assert {}'
+STR_ASSERT_TAB = '        assert {}'
+STR_TAB = '    '
 
 
 def parse_import(imps):
@@ -45,14 +54,22 @@ def parse_import(imps):
 
 def parse_func(name, pkg, mdn, inits, has_return, args, mocks, checks):
     """
+    parse one function.
     """
-    runs = ''
+    run_txt = ''
+    if mocks:
+        run_txt = STR_TAB
     if has_return:
-        runs = STR_RUNS_RETURN.format(mdn, name, ', '.join(args))
+        runs = run_txt + STR_RUNS_RETURN.format(mdn, name, ', '.join(args))
     else:
-        runs = STR_RUNS.format(mdn, name, ', '.join(args))
+        runs = run_txt + STR_RUNS.format(mdn, name, ', '.join(args))
     mck = parse_mocks(mocks)
-    return TEMP_FUNC.format(STR_PRE_FUNC + name, inits, mck, runs, checks)
+    if mocks:
+        txt_cheks = TEMP_FUNC_CHECK_TAB.format(checks)
+    else:
+        txt_cheks = TEMP_FUNC_CHECK.format(checks)
+
+    return TEMP_FUNC.format(STR_PRE_FUNC + name, inits, mck, runs) + txt_cheks
 
 
 def parse_varis(name, value):
@@ -77,7 +94,10 @@ def parse_mocks(mocks):
     return STR_RC.join(txt)
 
 
-def parse_assert(asserts):
+def parse_assert(asserts, tab=False):
     """
     """
-    return STR_RC.join([STR_ASSERT.format(asst) for asst in asserts])
+    if tab:
+        return STR_RC.join([STR_ASSERT_TAB.format(asst) for asst in asserts])
+    else:
+        return STR_RC.join([STR_ASSERT.format(asst) for asst in asserts])
