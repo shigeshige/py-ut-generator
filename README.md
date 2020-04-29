@@ -1,9 +1,10 @@
 # py-ut-generator
 This tools generate Python pytest UT code.
+This project uses ast module to generate.
 
 ### feature
 
-* create test python file in tests.
+* create test python file in tests package.
 * create pytest function from each function.
 * create mock patch.
 * create argument to call.
