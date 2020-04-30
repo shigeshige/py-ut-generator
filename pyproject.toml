@@ -1,8 +1,11 @@
 [tool.poetry]
-name = "py-ut-generator"
+name = "pyutgenerator"
 version = "0.1.0"
 description = ""
 authors = ["shigeshige <5540474+shigeshige@users.noreply.github.com>"]
+
+[tool.poetry.scripts]
+pyutgen = 'pyutgenerator.run:main'
 
 [tool.poetry.dependencies]
 python = "^3.7"

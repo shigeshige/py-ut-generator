@@ -6,7 +6,7 @@ copyrigth https://github.com/shigeshige/py-ut-generator
 
 import sys
 
-from pyutgenerator import files, ast_util, templates
+from pyutgenerator import files, ast_util
 
 
 def parse_file(file_name):

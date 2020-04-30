@@ -1,13 +1,14 @@
-# py-ut-generator
-This tools generate Python pytest UT code.  
-This project uses ast module to generate.
+#  Python UT generator
+This tools generate Python pytest Unit test code.  
+This project uses ast module to generate.  
+Easy to make coverage test.
 
 ### feature
 
-* create test python file in tests package.
-* create pytest function from each function.
-* create mock patch.
-* create argument to call.
+* Generate unit test python file in tests package.
+* Generate pytest test function from each function.
+* Generate mock patch syntax code.
+* Generate argument syntax code to call.
 * if function has return value, create assert return.
 
 
@@ -45,7 +46,9 @@ def test_get_function():
 ### for future
 
 * customize parameter options.
+* parameter type for str,list, obj ...
 * write return_value.
+* exception check.
 * call default and pass test.
 * genarete various parameters for test.
 
@@ -74,11 +77,9 @@ not yet
 
 ## Running
 
-now No command line or shell.  
-call python dilectry.
 
 ```
-python pyutgen.py "Input File Name"
+pyutgen "Input File Name"
 ```
 
 ## License
