@@ -27,7 +27,7 @@ def write_file(file_name, txt):
 
 def get_package_moduel(file_name):
     """
-    パッケージ名とモジュール名を取得
+    get package name and module name from file name.
     """
     modu = os.path.splitext(os.path.basename(file_name))[0]
     pth = pathlib.Path(file_name).absolute()
