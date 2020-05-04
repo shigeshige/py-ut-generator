@@ -13,17 +13,34 @@ def create_ast(file_name):
     parse source file.
     """
     src = files.read_file(file_name)
+    if not src:
+        return None
     return ast.parse(src, file_name)
 
 
-def get_function(modele):
+def get_function(module):
     """
+    get function from module.
     """
     funcs = []
-    for stm in modele.body:
+    for stm in module.body:
         if _equals(stm, const.AST_FUCNTION):
             funcs.append(stm)
     return funcs
+
+
+def has_test_function(test_module, func):
+    """
+    check test function already has.
+    """
+    if not test_module:
+        return False
+
+    for stm in ast.walk(test_module):
+        if _equals(stm, const.AST_FUCNTION):
+            if templates.get_test_func(func.name) == stm.name:
+                return True
+    return False
 
 
 def parse_import(module, pkg, mdn):

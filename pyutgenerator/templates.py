@@ -101,3 +101,10 @@ def parse_assert(asserts, tab=False):
         return STR_RC.join([STR_ASSERT_TAB.format(asst) for asst in asserts])
     else:
         return STR_RC.join([STR_ASSERT.format(asst) for asst in asserts])
+
+
+def get_test_func(func_name):
+    """
+    test function name.
+    """
+    return STR_PRE_FUNC + func_name

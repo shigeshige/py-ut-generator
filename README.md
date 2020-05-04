@@ -45,12 +45,14 @@ def test_get_function():
 ```
 ### for future
 
+* regist pypi.
 * customize parameter options.
 * parameter type for str,list, obj ...
 * write return_value.
 * exception check.
 * call default and pass test.
 * genarete various parameters for test.
+* web ui for test.
 
 ## Getting Started
 

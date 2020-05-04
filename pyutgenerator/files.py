@@ -10,19 +10,28 @@ def read_file(file_name):
     """
     read utf8 txt file.
     """
+    if not os.path.exists(file_name):
+        return None
+
     with open(file_name, 'r', encoding='utf-8') as f:
         return f.read()
 
 
-def write_file(file_name, txt):
+def write_file(file_name, txt, append=False):
     """
     write txt file.
     and mkdir directory
     """
+    mode = 'w'
+    if append and os.path.exists(file_name):
+        mode = 'a'
+    if not txt:
+        print('No output')
+        return
     dirs = os.path.dirname(file_name)
     os.makedirs(dirs, exist_ok=True)
-    with open(file_name, mode='w') as f:
-        f.write(txt)
+    with open(file_name, mode=mode) as fip:
+        fip.write(txt)
 
 
 def get_package_moduel(file_name):
