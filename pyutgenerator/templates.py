@@ -12,9 +12,10 @@ from unittest.mock import MagicMock
 
 TEMP_FUNC = """
 def {}():
-    # init
+    # plan
 {}
-    # run
+    # do
+{}
 {}
 {}
 """
@@ -39,6 +40,7 @@ STR_RUNS_RETURN = '    ret = {}.{}({})'
 
 STR_WITH = '    with\\'
 STR_MOCK = "            patch('{}') as {}"
+STR_MOCK_RETURN = '        {}.return_value = {}'
 
 STR_RC = '\n'
 STR_ASSERT = '    assert {}'
@@ -64,18 +66,31 @@ def parse_func(name, pkg, mdn, inits, has_return, args, mocks, checks):
     else:
         runs = run_txt + STR_RUNS.format(mdn, name, ', '.join(args))
     mck = parse_mocks(mocks)
+    mck_ret = parse_mocks_return(mocks)
     if mocks:
         txt_cheks = TEMP_FUNC_CHECK_TAB.format(checks)
     else:
         txt_cheks = TEMP_FUNC_CHECK.format(checks)
 
-    return TEMP_FUNC.format(STR_PRE_FUNC + name, inits, mck, runs) + txt_cheks
+    return TEMP_FUNC.format(STR_PRE_FUNC + name, inits, mck, mck_ret, runs) + txt_cheks
 
 
 def parse_varis(name, value):
     """
     """
     return STR_VARIS.format(name, value)
+
+
+def parse_mocks_return(mocks):
+    """
+    m.return_value = None
+    """
+    txt = []
+    for i, moc in enumerate(mocks):
+        if moc[1]:
+            txt.append(STR_MOCK_RETURN.format('m' + str(i + 1), 'None'))
+
+    return STR_RC.join(txt)
 
 
 def parse_mocks(mocks):
@@ -85,8 +100,8 @@ def parse_mocks(mocks):
     if not mocks:
         return ''
     txt.append(STR_WITH)
-    for i, m in enumerate(mocks):
-        txt.append(STR_MOCK.format(m[0], 'm' + str(i + 1)))
+    for i, moc in enumerate(mocks):
+        txt.append(STR_MOCK.format(moc[0], 'm' + str(i + 1)))
         if len(mocks) - 1 == i:
             txt[-1] += ':'
         else:

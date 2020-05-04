@@ -106,14 +106,15 @@ def get_calls(func):
         if _equals(stm, const.AST_CALL):
             # print('---cal--')
             if _equals(stm.func, const.AST_NAME):
-                calls.append(['', stm.func.id])
+                has_return = _has_return_call(stm, func)
+                calls.append(['', stm.func.id, has_return])
             if _equals(
                     stm.func,
                     const.AST_ATTRIBUTE) and _equals(
                         stm.func.value,
                         const.AST_NAME):
-                calls.append([stm.func.value.id, stm.func.attr])
-            # TODO: has return
+                has_return = _has_return_call(stm, func)
+                calls.append([stm.func.value.id, stm.func.attr, has_return])
     return calls
 
 
@@ -122,6 +123,30 @@ def _get_funcs(module):
     get function list
     """
     return [stm for stm in ast.walk(module) if _equals(stm, const.AST_FUCNTION)]
+
+
+def _has_return_call(call_obj, func):
+    """
+    call ast uses return value?
+    """
+    for stm in ast.walk(func):
+        if _equals(stm, const.AST_ASSIGN):
+            for stm2 in ast.walk(stm.value):
+                if stm2 is call_obj:
+                    return True
+        if _equals(stm, const.AST_CALL):
+            for stm2 in [j for i in stm.args for j in ast.walk(i)]:
+                if stm2 is call_obj:
+                    return True
+        if _equals(stm, const.AST_IF) or _equals(stm, const.AST_WHILE):
+            for stm2 in ast.walk(stm.test):
+                if stm2 is call_obj:
+                    return True
+        if _equals(stm, const.AST_WITH):
+            for stm2 in ast.walk(stm.items):
+                if stm2 is call_obj:
+                    return True
+    return False
 
 
 def get_mocks(calls, module, pkg, mdn):
@@ -137,18 +162,18 @@ def get_mocks(calls, module, pkg, mdn):
                     # import xxx
                     import_flg = True
                 elif names_str(stm) == c[0]:
-                    mocks.append([c[0] + '.' + c[1]])
+                    mocks.append([c[0] + '.' + c[1], c[2]])
                     import_flg = True
             if _equals(stm, const.AST_IMPORT_FROM):
                 # from xxx inport yyy
                 if c[0] in list(map(lambda x: x.name, stm.names)):
-                    mocks.append([stm.module + '.' + c[0] + '.' + c[1]])
+                    mocks.append([stm.module + '.' + c[0] + '.' + c[1], c[2]])
         if import_flg:
             continue
         for stm in get_function(module):
             # def xxx():
             if not c[0] and c[1] == stm.name:
-                mocks.append([pkg + '.' + mdn + '.' + c[1]])
+                mocks.append([pkg + '.' + mdn + '.' + c[1], c[2]])
 
     return mocks
 

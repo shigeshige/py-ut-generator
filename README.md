@@ -32,12 +32,13 @@ def get_function(modeles):
 ```
 
 def test_get_function():
-    # init
-    modeles = None
-    # run
+    # plan
+    module = None
+    # do
     with\
             patch('pyutgenerator.ast_util._equals') as m1:
-        ret = ast_util.get_function(modeles)
+        m1.return_value = None
+        ret = ast_util.get_function(module)
 
         # check
         assert ret
