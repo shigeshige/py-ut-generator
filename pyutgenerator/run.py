@@ -11,7 +11,7 @@ import sys
 from pyutgenerator import files, ast_util
 
 
-def parse_file(file_name):
+def parse_file(file_name, renew=False):
     """
     generate test code.
     """
@@ -20,10 +20,14 @@ def parse_file(file_name):
         print('File not Found :' + str(file_name))
         return
     funcs = ast_util.get_function(module)
+    cls_funcs = ast_util.get_function_class(module)
     pkg, mdn = files.get_package_moduel(file_name)
     ts_file = files.get_test_file_name(pkg, mdn)
     old_test = ast_util.create_ast(ts_file)
     append = old_test is not None
+    if renew:
+        append = False
+        old_test = None
     if append:
         ttt = ''
     else:
@@ -33,6 +37,12 @@ def parse_file(file_name):
         if ast_util.has_test_function(old_test, func):
             continue
         ttt += ast_util.parse_func(func, pkg, mdn, module)
+
+    for func, clazz in cls_funcs:
+        if ast_util.has_test_function(old_test, func):
+            continue
+        ttt += ast_util.parse_func(func, pkg, mdn, module, clazz)
+
     files.write_file(ts_file, ttt, append)
 
 

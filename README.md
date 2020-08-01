@@ -1,5 +1,5 @@
 #  Python UT generator
-This tools generate Python pytest Unit test code.  
+This tools generate automatically Python pytest Unit test code.  
 This project uses ast module to generate.  
 Easy to make coverage test.
 
