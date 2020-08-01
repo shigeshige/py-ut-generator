@@ -4,6 +4,9 @@ copyrigth https://github.com/shigeshige/py-ut-generator
 """
 
 import ast
+from pyutgenerator.objects import CallFunc, MockFunc
+
+from typing import List, Optional
 
 from pyutgenerator import const, templates, files
 
@@ -26,6 +29,20 @@ def get_function(module):
     for stm in module.body:
         if _equals(stm, const.AST_FUCNTION):
             funcs.append(stm)
+    return funcs
+
+
+def get_function_class(module):
+    """
+    get function from class module.
+    """
+    funcs = []
+    for stm in module.body:
+        # class define
+        if _equals(stm, const.AST_CLASS):
+            for stm2 in stm.body:
+                if _equals(stm2, const.AST_FUCNTION):
+                    funcs.append((stm2, stm.name))
     return funcs
 
 
@@ -53,7 +70,7 @@ def parse_import(module, pkg, mdn):
     return templates.parse_import(owenr)
 
 
-def parse_func(func, pkg, mdn, module):
+def parse_func(func, pkg, mdn, module, class_name=None):
     """
     呼び出し関数の解析と出力
     """
@@ -67,15 +84,14 @@ def parse_func(func, pkg, mdn, module):
     checks = ''
     if has_return:
         checks = templates.parse_assert(['ret'], mocks)
+    class_func = len(
+        list(
+            filter(
+                lambda x: x.id in ['staticmethod', 'classmethod'],
+                func.decorator_list))) != 0
     return templates.parse_func(
-        name,
-        pkg,
-        mdn,
-        inits,
-        has_return,
-        args,
-        mocks,
-        checks)
+        name, pkg, mdn, inits, has_return, args,
+        mocks, checks, class_name, class_func)
 
 
 def has_return_val(func):
@@ -97,7 +113,7 @@ def get_func_arg(func):
     return prms
 
 
-def get_calls(func):
+def get_calls(func) -> List[CallFunc]:
     """
     関数呼び出しを取得する
     """
@@ -105,16 +121,28 @@ def get_calls(func):
     for stm in ast.walk(func):
         if _equals(stm, const.AST_CALL):
             # print('---cal--')
+            # call(hoge)
             if _equals(stm.func, const.AST_NAME):
                 has_return = _has_return_call(stm, func)
-                calls.append(['', stm.func.id, has_return])
+                calls.append(CallFunc('', stm.func.id, has_return))
+            # hoge.call(hoge)
             if _equals(
                     stm.func,
                     const.AST_ATTRIBUTE) and _equals(
                         stm.func.value,
                         const.AST_NAME):
                 has_return = _has_return_call(stm, func)
-                calls.append([stm.func.value.id, stm.func.attr, has_return])
+                calls.append(CallFunc(stm.func.value.id, stm.func.attr, has_return))
+            # hoge.hoge.call(hoge)
+            if _equals(
+                    stm.func, const.AST_ATTRIBUTE) and _equals(
+                        stm.func.value, const.AST_ATTRIBUTE) and _equals(
+                        stm.func.value.value, const.AST_NAME):
+                has_return = _has_return_call(stm, func)
+                calls.append(
+                    CallFunc(
+                        stm.func.value.attr, stm.func.attr, has_return,
+                        stm.func.value.value.id))
     return calls
 
 
@@ -149,31 +177,53 @@ def _has_return_call(call_obj, func):
     return False
 
 
-def get_mocks(calls, module, pkg, mdn):
+def _create_mock_func(stm, c: CallFunc, pkg, mdn):
+    # from xxx import yyy
+    if c.module in list(map(lambda x: x.name, stm.names)):
+        return MockFunc(
+            stm.module + '.' + c.module + '.' + c.func_name, c.has_return)
+    # from xxx.xxx import yyy
+    if c.func_name in list(map(lambda x: x.name, stm.names)):
+        if c.module:
+            return MockFunc(
+                stm.module + '.' + c.module + '.' + c.func_name, c.has_return)
+        else:
+            return MockFunc(
+                pkg + '.' + mdn + '.' + c.func_name, c.has_return)
+    return None
+
+
+def get_mocks(calls: List[CallFunc], module, pkg, mdn):
     """
     呼び出し先のモックを作成する。
     """
-    mocks = []
+    mocks: List[MockFunc] = []
     for c in calls:
         import_flg = False
         for stm in ast.walk(module):
             if _equals(stm, const.AST_IMPORT):
-                if names_str(stm) == c[1] and not c[0]:
+                if names_str(stm) == c.func_name and not c.module:
                     # import xxx
                     import_flg = True
-                elif names_str(stm) == c[0]:
-                    mocks.append([c[0] + '.' + c[1], c[2]])
+                elif names_str(stm) == c.module:
+                    if c.module2:
+                        mocks.append(
+                            MockFunc(
+                                pkg + '.' + mdn + '.' + c.module2,
+                                c.has_return, c.func_name))
+                    else:
+                        mocks.append(MockFunc(c.module + '.' + c.func_name, c.has_return))
                     import_flg = True
             if _equals(stm, const.AST_IMPORT_FROM):
-                # from xxx inport yyy
-                if c[0] in list(map(lambda x: x.name, stm.names)):
-                    mocks.append([stm.module + '.' + c[0] + '.' + c[1], c[2]])
+                mck = _create_mock_func(stm, c, pkg, mdn)
+                if mck is not None:
+                    mocks.append(mck)
         if import_flg:
             continue
         for stm in get_function(module):
             # def xxx():
-            if not c[0] and c[1] == stm.name:
-                mocks.append([pkg + '.' + mdn + '.' + c[1], c[2]])
+            if not c.module and c.func_name == stm.name:
+                mocks.append(MockFunc(pkg + '.' + mdn + '.' + c.func_name, c.has_return))
 
     return mocks
 
