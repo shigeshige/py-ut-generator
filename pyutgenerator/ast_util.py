@@ -87,7 +87,7 @@ def parse_func(func, pkg, mdn, module, class_name=None):
     class_func = len(
         list(
             filter(
-                lambda x: x.id in ['staticmethod', 'classmethod'],
+                lambda x: getattr(x, 'id', None) in ['staticmethod', 'classmethod'],
                 func.decorator_list))) != 0
     return templates.parse_func(
         name, pkg, mdn, inits, has_return, args,

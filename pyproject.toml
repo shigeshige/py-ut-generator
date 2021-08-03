@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pyutgenerator"
-version = "0.1.0"
+version = "0.3.0"
 description = ""
 authors = ["shigeshige <5540474+shigeshige@users.noreply.github.com>"]
 
