@@ -5,8 +5,10 @@ Generate test code tool
 
 copyrigth https://github.com/shigeshige/py-ut-generator
 """
+import argparse
 
 import sys
+
 
 from pyutgenerator import files, ast_util
 
@@ -54,8 +56,13 @@ def main():
     """
     main function.
     """
-    f_name = sys.argv[1]
-    parse_file(f_name)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("filename", help="input python filename")
+    parser.add_argument("--ovewrite", help="overwrite test code", action="store_true")
+    args = parser.parse_args()
+    print(args.filename)
+    print(args.ovewrite)
+    parse_file(args.filename, args.ovewrite)
     return
 
 
