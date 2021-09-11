@@ -3,7 +3,7 @@ Generate test code tool
 
 copyrigth https://github.com/shigeshige/py-ut-generator
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, List, Optional
 
 
@@ -42,5 +42,5 @@ class ParseFunc:
     calls : List[CallFunc] = None
     has_return: bool  = False
     class_name : str = ''
-    mocks : List[MockFunc] = []
+    mocks : List[MockFunc] = field(default_factory=list)
     class_func : bool = False

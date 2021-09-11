@@ -84,7 +84,7 @@ def parse_func(fpo: ParseFunc):
 
     if fpo.mocks:
         run_txt = STR_TAB
-    if not fpo.class_name:
+    if fpo.class_name:
         # call for Class
         if fpo.class_func:
             if fpo.has_return:
