@@ -1,4 +1,6 @@
 """
+Generate test code tool
+
 copyrigth https://github.com/shigeshige/py-ut-generator
 """
 
@@ -30,7 +32,7 @@ def write_file(file_name, txt, append=False):
         return
     dirs = os.path.dirname(file_name)
     os.makedirs(dirs, exist_ok=True)
-    with open(file_name, mode=mode) as fip:
+    with open(file_name, mode=mode, encoding='utf8') as fip:
         fip.write(txt)
 
 
