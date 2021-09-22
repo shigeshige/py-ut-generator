@@ -5,7 +5,7 @@ copyrigth https://github.com/shigeshige/py-ut-generator
 """
 
 import ast
-from typing import List
+from typing import List, Optional
 
 from pyutgenerator import const, files
 from pyutgenerator.objects import CallFunc, MockFunc, ParseFunc
@@ -21,7 +21,7 @@ def create_ast(file_name):
     return ast.parse(src, file_name)
 
 
-def get_function(module):
+def get_function(module) -> List[ast.FunctionDef]:
     """
     get function from module.
     """
@@ -120,7 +120,7 @@ def get_calls(func) -> List[CallFunc]:
     return calls
 
 
-def _get_funcs(module):
+def get_funcs(module) -> List[ast.FunctionDef]:
     """
     get function list
     """
@@ -151,19 +151,22 @@ def _has_return_call(call_obj, func):
     return False
 
 
-def _create_mock_func(stm, cf: CallFunc, pkg, mdn):
+def _create_mock_func(stm, clf: CallFunc, pkg, mdn) -> Optional[MockFunc]:
+    """
+    create mocks
+    """
     # from xxx import yyy
-    if cf.module in list(map(lambda x: x.name, stm.names)):
+    if clf.module in list(map(lambda x: x.name, stm.names)):
         return MockFunc(
-            stm.module + '.' + cf.module + '.' + cf.func_name, cf.has_return)
+            stm.module + '.' + clf.module + '.' + clf.func_name, clf.has_return)
     # from xxx.xxx import yyy
-    if cf.func_name in list(map(lambda x: x.name, stm.names)):
-        if cf.module:
+    if clf.func_name in list(map(lambda x: x.name, stm.names)):
+        if clf.module:
             return MockFunc(
-                stm.module + '.' + cf.module + '.' + cf.func_name, cf.has_return)
+                stm.module + '.' + clf.module + '.' + clf.func_name, clf.has_return)
         else:
             return MockFunc(
-                pkg + '.' + mdn + '.' + cf.func_name, cf.has_return)
+                pkg + '.' + mdn + '.' + clf.func_name, clf.has_return)
     return None
 
 
@@ -172,59 +175,59 @@ def get_mocks(calls: List[CallFunc], module, pkg, mdn):
     呼び出し先のモックを作成する。
     """
     mocks: List[MockFunc] = []
-    for c in calls:
+    for clf in calls:
         import_flg = False
         for stm in ast.walk(module):
             if _equals(stm, const.AST_IMPORT):
-                if names_str(stm) == c.func_name and not c.module:
+                if get_import_names(stm) == clf.func_name and not clf.module:
                     # import xxx
                     import_flg = True
-                elif names_str(stm) == c.module:
-                    if c.module2:
+                elif get_import_names(stm) == clf.module:
+                    if clf.module2:
                         mocks.append(
                             MockFunc(
-                                pkg + '.' + mdn + '.' + c.module2,
-                                c.has_return, c.func_name))
+                                pkg + '.' + mdn + '.' + clf.module2,
+                                clf.has_return, clf.func_name))
                     else:
-                        mocks.append(MockFunc(c.module + '.' + c.func_name, c.has_return))
+                        mocks.append(MockFunc(clf.module + '.' + clf.func_name, clf.has_return))
                     import_flg = True
             if _equals(stm, const.AST_IMPORT_FROM):
-                mck = _create_mock_func(stm, c, pkg, mdn)
+                mck = _create_mock_func(stm, clf, pkg, mdn)
                 if mck is not None:
                     mocks.append(mck)
         if import_flg:
             continue
         for stm in get_function(module):
             # def xxx():
-            if not c.module and c.func_name == stm.name:
-                mocks.append(MockFunc(pkg + '.' + mdn + '.' + c.func_name, c.has_return))
+            if not clf.module and clf.func_name == stm.name:
+                mocks.append(MockFunc(pkg + '.' + mdn + '.' + clf.func_name, clf.has_return))
 
     return mocks
 
 
-def names_str(stm):
+def get_import_names(stm : ast.Import):
     """
-    join names
+    join import names.
     """
     return '.'.join([x.name for x in stm.names])
 
 
-def _equals(stm, class_name):
+def _equals(stm, class_name) -> bool:
     """
-    check class name.\
+    check class name.
     """
     return stm.__class__.__name__ == class_name
 
 
-def make_func_obj(t_func, pkg, mdn, module, class_name='') -> ParseFunc:
+def make_func_obj(t_func : ast.FunctionDef, package, module_name, module, class_name='') -> ParseFunc:
     """
     関数解析
     """
 
     pfo = ParseFunc(
         t_func.name, t_func,
-        mdn,
-        pkg,
+        module_name,
+        package,
         get_func_arg(t_func),
         get_calls(t_func),
         has_return_val(t_func))
@@ -234,6 +237,6 @@ def make_func_obj(t_func, pkg, mdn, module, class_name='') -> ParseFunc:
                 lambda x: getattr(x, 'id', None) in [
                     'staticmethod', 'classmethod'],
                 t_func.decorator_list))) != 0
-    pfo.mocks = get_mocks(pfo.calls, module, pkg, mdn)
+    pfo.mocks = get_mocks(pfo.calls, module, package, module_name)
     pfo.class_name = class_name
     return pfo

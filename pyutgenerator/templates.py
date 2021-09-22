@@ -74,7 +74,7 @@ def parse_func(fpo: ParseFunc):
     """
     parse one function.
     """
-    mdn = fpo.mdn
+    mdn = fpo.module_name
     run_txt = ''
     checks = ''
 

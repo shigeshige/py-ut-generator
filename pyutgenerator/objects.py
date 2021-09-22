@@ -3,8 +3,9 @@ Generate test code tool
 
 copyrigth https://github.com/shigeshige/py-ut-generator
 """
+import ast
 from dataclasses import dataclass, field
-from typing import Any, List, Optional
+from typing import List, Optional
 
 
 @dataclass
@@ -35,10 +36,10 @@ class ParseFunc:
     Parse Func Obj
     """
     name : str
-    t_func: Any = None
-    mdn: Any = None
-    pkg : str = ''
-    args : List = None
+    t_func: ast.FunctionDef = None
+    module_name: str = ''
+    pakcage : str = ''
+    args : List[str] = None
     calls : List[CallFunc] = None
     has_return: bool  = False
     class_name : str = ''
