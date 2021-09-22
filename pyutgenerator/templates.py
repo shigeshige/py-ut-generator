@@ -1,10 +1,14 @@
 """
+Generate test code tool
+
 copyrigth https://github.com/shigeshige/py-ut-generator
 """
 
-from pyutgenerator.objects import MockFunc
 from typing import List
 
+from pyutgenerator.objects import MockFunc, ParseFunc
+
+STR_PRE_FUNC = 'test_'
 
 TEMP_IMPORT = """
 import pytest
@@ -33,7 +37,6 @@ TEMP_FUNC_CHECK_TAB = """
 {}
 """
 
-STR_PRE_FUNC = 'test_'
 
 STR_FROM_IMPORT = 'form {} import {}'
 
@@ -56,62 +59,67 @@ STR_ASSERT_TAB = '        assert {}'
 STR_TAB = '    '
 
 
-def parse_import(imps):
+def parse_import(pkg, mdn):
     """
+    parse import
     """
-    return TEMP_IMPORT.format(imps)
+    owenr = f'from {pkg} import {mdn}'
+    if not pkg:
+        owenr = f'import {mdn}'
+
+    return TEMP_IMPORT.format(owenr)
 
 
-def parse_func(
-        name,
-        pkg,
-        mdn,
-        inits,
-        has_return,
-        args,
-        mocks: List[MockFunc],
-        checks,
-        class_name=None,
-        class_func=False):
+def parse_func(fpo: ParseFunc):
     """
     parse one function.
     """
+    mdn = fpo.module_name
     run_txt = ''
-    if mocks:
+    checks = ''
+
+    if fpo.has_return:
+        checks = parse_assert(['ret'], fpo.mocks)
+    inits = '\n'.join([parse_varis(arg, 'None') for arg in fpo.args])
+
+    if fpo.mocks:
         run_txt = STR_TAB
-    if class_name is not None:
+    if fpo.class_name:
         # call for Class
-        if class_func:
-            if has_return:
+        if fpo.class_func:
+            if fpo.has_return:
                 runs = run_txt + \
-                    STR_RUNS_RETURN.format(mdn, class_name + '.' + name, ', '.join(args))
+                    STR_RUNS_RETURN.format(
+                        mdn, fpo.class_name + '.' + fpo.name, ', '.join(fpo.args))
             else:
                 runs = run_txt + STR_RUNS.format(mdn,
-                                                 class_name + '.' + name,
-                                                 ', '.join(args))
+                                                 fpo.class_name + '.' + fpo.name,
+                                                 ', '.join(fpo.args))
         else:
-            runs = run_txt + STR_RUNS_PRE.format(mdn, class_name)
-            if has_return:
-                runs += run_txt + STR_RUNS_RETURN.format('target', name, ', '.join(args))
+            runs = run_txt + STR_RUNS_PRE.format(mdn, fpo.class_name)
+            if fpo.has_return:
+                runs += run_txt + \
+                    STR_RUNS_RETURN.format('target', fpo.name, ', '.join(fpo.args))
             else:
-                runs += run_txt + STR_RUNS.format('target', name, ', '.join(args))
+                runs += run_txt + \
+                    STR_RUNS.format('target', fpo.name, ', '.join(fpo.args))
     else:
-        if has_return:
-            runs = run_txt + STR_RUNS_RETURN.format(mdn, name, ', '.join(args))
+        if fpo.has_return:
+            runs = run_txt + STR_RUNS_RETURN.format(mdn, fpo.name, ', '.join(fpo.args))
         else:
-            runs = run_txt + STR_RUNS.format(mdn, name, ', '.join(args))
-    mck = parse_mocks(mocks)
-    mck_ret = parse_mocks_return(mocks)
-    if mocks:
+            runs = run_txt + STR_RUNS.format(mdn, fpo.name, ', '.join(fpo.args))
+    mck = parse_mocks(fpo.mocks)
+    mck_ret = parse_mocks_return(fpo.mocks)
+    if fpo.mocks:
         txt_cheks = TEMP_FUNC_CHECK_TAB.format(checks)
     else:
         txt_cheks = TEMP_FUNC_CHECK.format(checks)
 
-    return TEMP_FUNC.format(STR_PRE_FUNC + name, inits, mck, mck_ret, runs) + txt_cheks
-
+    return TEMP_FUNC.format(STR_PRE_FUNC + fpo.name, inits, mck, mck_ret, runs) + txt_cheks
 
 def parse_varis(name, value):
     """
+    parse variers
     """
     return STR_VARIS.format(name, value)
 
@@ -125,13 +133,15 @@ def parse_mocks_return(mocks: List[MockFunc]):
         if moc.has_return:
             txt.append(STR_MOCK_RETURN.format('m' + str(i + 1), 'None'))
             if moc.func_name:
-                txt.append(STR_MOCK_FUNC.format('m' + str(i + 1), moc.func_name))
+                txt.append(STR_MOCK_FUNC.format(
+                    'm' + str(i + 1), moc.func_name))
 
     return STR_RC.join(txt)
 
 
 def parse_mocks(mocks: List[MockFunc]):
     """
+    parse mocks.
     """
     txt = []
     if not mocks:
@@ -148,15 +158,9 @@ def parse_mocks(mocks: List[MockFunc]):
 
 def parse_assert(asserts, tab=False):
     """
+    parse assert.
     """
     if tab:
         return STR_RC.join([STR_ASSERT_TAB.format(asst) for asst in asserts])
     else:
         return STR_RC.join([STR_ASSERT.format(asst) for asst in asserts])
-
-
-def get_test_func(func_name):
-    """
-    test function name.
-    """
-    return STR_PRE_FUNC + func_name

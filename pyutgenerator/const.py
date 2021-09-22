@@ -1,4 +1,6 @@
 """
+Generate test code tool
+
 copyrigth https://github.com/shigeshige/py-ut-generator
 定数一覧
 """
@@ -18,3 +20,5 @@ AST_ASSIGN = 'Assign'
 AST_WHILE = 'While'
 AST_WITH = 'With'
 AST_CLASS = 'ClassDef'
+
+STR_PRE_FUNC = 'test_'
