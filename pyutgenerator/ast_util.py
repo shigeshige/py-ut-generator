@@ -96,27 +96,26 @@ def get_calls(func) -> List[CallFunc]:
         if _equals(stm, const.AST_CALL):
             # print('---cal--')
             # call(hoge)
+            cfo = None
             if _equals(stm.func, const.AST_NAME):
                 has_return = _has_return_call(stm, func)
-                calls.append(CallFunc('', stm.func.id, has_return))
+                cfo = CallFunc('', stm.func.id, has_return)
             # hoge.call(hoge)
-            if _equals(
-                    stm.func,
-                    const.AST_ATTRIBUTE) and _equals(
-                        stm.func.value,
-                        const.AST_NAME):
+            if (_equals(stm.func,const.AST_ATTRIBUTE) 
+                    and _equals(stm.func.value, const.AST_NAME)):
                 has_return = _has_return_call(stm, func)
-                calls.append(CallFunc(stm.func.value.id, stm.func.attr, has_return))
+                cfo = CallFunc(stm.func.value.id, stm.func.attr, has_return)
             # hoge.hoge.call(hoge)
-            if _equals(
-                    stm.func, const.AST_ATTRIBUTE) and _equals(
-                        stm.func.value, const.AST_ATTRIBUTE) and _equals(
-                        stm.func.value.value, const.AST_NAME):
+            if (_equals( stm.func, const.AST_ATTRIBUTE)
+                    and _equals(stm.func.value, const.AST_ATTRIBUTE)
+                    and _equals(stm.func.value.value, const.AST_NAME)):
                 has_return = _has_return_call(stm, func)
-                calls.append(
-                    CallFunc(
-                        stm.func.value.attr, stm.func.attr, has_return,
-                        stm.func.value.value.id))
+                cfo = CallFunc(
+                        stm.func.value.value.id, stm.func.attr, has_return,
+                        stm.func.value.attr)
+            if cfo:
+                cfo.ats = stm
+                calls.append(cfo)
     return calls
 
 
@@ -152,6 +151,12 @@ def _has_return_call(call_obj, func):
             for stm2 in ast.walk(stm):
                 if stm2 is call_obj:
                     return True
+        # return aaa()
+        if _equals(stm, const.AST_RETURN):
+            for stm2 in ast.walk(stm):
+                if stm2 is call_obj:
+                    return True
+
     return False
 
 
@@ -183,16 +188,19 @@ def get_mocks(calls: List[CallFunc], module, pkg, mdn):
         import_flg = False
         for stm in ast.walk(module):
             if _equals(stm, const.AST_IMPORT):
-                if get_import_names(stm) == clf.func_name and not clf.module:
+                names = get_import_names(stm)
+                if names == clf.func_name and not clf.module:
                     # import xxx
                     import_flg = True
-                elif get_import_names(stm) == clf.module:
+                elif names == clf.module:
+                    # import xxx -> xxx.yyy.clf()
                     if clf.module2:
                         mocks.append(
                             MockFunc(
-                                pkg + '.' + mdn + '.' + clf.module2,
+                                pkg + '.' + mdn + '.' + clf.module + '.' + clf.module2,
                                 clf.has_return, clf.func_name))
                     else:
+                        # import xxx -> xxx.clf()
                         mocks.append(MockFunc(clf.module + '.' + clf.func_name, clf.has_return))
                     import_flg = True
             if _equals(stm, const.AST_IMPORT_FROM):

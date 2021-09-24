@@ -6,6 +6,7 @@ authors = ["shigeshige <5540474+shigeshige@users.noreply.github.com>"]
 license = "MIT"
 homepage = "https://github.com/shigeshige/py-ut-generator"
 repository = "https://github.com/shigeshige/py-ut-generator"
+readme = "README.md"
 
 [tool.poetry.scripts]
 pyutgen = 'pyutgenerator.run:main'

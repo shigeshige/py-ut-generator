@@ -11,6 +11,20 @@ Easy to make coverage test.
 * Generate argument syntax code to call.
 * if function has return value, create assert return.
 
+## Installation
+
+### install pip
+
+```
+pip install pyutgen
+```
+
+### genarete test code
+
+
+```
+pyutgen "Input File Name"
+```
 
 
 ### sample input file
@@ -55,10 +69,6 @@ def test_get_function():
 * genarete various parameters for test.
 * web ui for test.
 
-## Getting Started
-
-not yet
-
 ### Prerequisites
 
 not yet
@@ -67,23 +77,6 @@ not yet
 not yet
 ```
 
-### Installing
-
-not yet
-
-
-```
-not yet
-```
-
-
-
-## Running
-
-
-```
-pyutgen "Input File Name"
-```
 
 ## License
 
