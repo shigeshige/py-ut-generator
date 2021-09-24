@@ -132,20 +132,24 @@ def _has_return_call(call_obj, func):
     call ast uses return value?
     """
     for stm in ast.walk(func):
+        # bbb = aaa()
         if _equals(stm, const.AST_ASSIGN):
             for stm2 in ast.walk(stm.value):
                 if stm2 is call_obj:
                     return True
+        # bbb(aaa())
         if _equals(stm, const.AST_CALL):
             for stm2 in [j for i in stm.args for j in ast.walk(i)]:
                 if stm2 is call_obj:
                     return True
+        # if aaa():
         if _equals(stm, const.AST_IF) or _equals(stm, const.AST_WHILE):
             for stm2 in ast.walk(stm.test):
                 if stm2 is call_obj:
                     return True
+        # with aaa() as bbb
         if _equals(stm, const.AST_WITH):
-            for stm2 in ast.walk(stm.items):
+            for stm2 in ast.walk(stm):
                 if stm2 is call_obj:
                     return True
     return False
