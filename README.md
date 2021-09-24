@@ -16,8 +16,12 @@ Easy to make coverage test.
 ### install pip
 
 ```
-pip install pyutgen
+pip install pyutgenerator
 ```
+https://pypi.org/project/pyutgenerator/
+
+
+## Run tool.
 
 ### genarete test code
 
@@ -30,29 +34,36 @@ pyutgen "Input File Name"
 ### sample input file
 
 ```
+import os
 
-def get_function(modeles):
+
+def aaaaa():
     """
+    call and return
     """
-    funcs = []
-    for stm in modeles.body:
-        if _equals(stm, const.AST_FUCNTION):
-            funcs.append(stm)
-    return funcs
+    return os.path.exists('')
+
 ```
 
 ### sample out put
 
 ```
 
-def test_get_function():
+import pytest
+from unittest.mock import patch
+from unittest.mock import MagicMock
+
+from tests.pyutgenerator.data import pattern01
+
+def test_aaaaa():
     # plan
-    module = None
+
     # do
     with\
-            patch('pyutgenerator.ast_util._equals') as m1:
+            patch('tests.pyutgenerator.data.pattern01.os.path') as m1:
         m1.return_value = None
-        ret = ast_util.get_function(module)
+        m1.exists = MagicMock(return_value=None)
+        ret = pattern01.aaaaa()
 
         # check
         assert ret

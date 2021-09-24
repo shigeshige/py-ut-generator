@@ -1,18 +1,18 @@
 """
-test 001
+test 002
 """
 
 
-from pyutgenerator import ast_util, files, run
+from tests.pyutgenerator.data import pattern02
 
-from tests.pyutgenerator.data import pattern01
+from pyutgenerator import ast_util, files, run
 
 
 def test_01():
     """
     test
     """
-    file_name = pattern01.__file__
+    file_name = pattern02.__file__
     module = ast_util.create_ast(file_name)
     pkg, mdn = files.get_package_moduel(file_name)
 
@@ -22,15 +22,14 @@ def test_01():
     assert has_return
 
     mocks = ast_util.get_mocks(calls, module, pkg, mdn)
-    assert mocks[0].mock_path == 'tests.pyutgenerator.data.pattern01.os.path'
-
+    assert mocks[0].mock_path == 'tests.pyutgenerator.data.pattern02.f01'
 
 
 def test_output():
     """
     test
     """
-    file_name = pattern01.__file__
+    file_name = pattern02.__file__
     module = ast_util.create_ast(file_name)
     
     pkg, mdn = files.get_package_moduel(file_name)

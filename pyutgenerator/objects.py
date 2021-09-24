@@ -29,6 +29,7 @@ class MockFunc:
     mock_path: str
     has_return: bool = False
     func_name: Optional[str] = None
+    call_count: int = 1
 
 @dataclass
 class ParseFunc:

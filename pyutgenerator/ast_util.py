@@ -216,6 +216,23 @@ def get_mocks(calls: List[CallFunc], module, pkg, mdn):
 
     return mocks
 
+def merge_mocks(mocks: List[MockFunc]):
+    """
+    merge same mock call.
+    """
+    ret: List[MockFunc] = []
+    for mk1 in mocks:
+        same = False
+        for mk2 in ret:
+            if mk1.mock_path == mk2.mock_path and mk1.func_name == mk2.func_name:
+                mk2.call_count += 1
+                same = True
+                break
+        if not same:
+            ret.append(mk1)
+
+    return ret
+
 
 def get_import_names(stm : ast.Import):
     """
@@ -250,5 +267,6 @@ def make_func_obj(t_func : ast.FunctionDef, package, module_name, module, class_
                     'staticmethod', 'classmethod'],
                 t_func.decorator_list))) != 0
     pfo.mocks = get_mocks(pfo.calls, module, package, module_name)
+    pfo.mocks = merge_mocks(pfo.mocks)
     pfo.class_name = class_name
     return pfo
