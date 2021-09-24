@@ -18,7 +18,7 @@ class CallFunc:
     has_return: bool = False
     module2: Optional[str] = None
     class_name: Optional[str] = None
-    ats = None
+    ats: Optional[ast.AST] = None
 
 
 @dataclass
@@ -29,6 +29,7 @@ class MockFunc:
     mock_path: str
     has_return: bool = False
     func_name: Optional[str] = None
+    call_count: int = 1
 
 @dataclass
 class ParseFunc:
@@ -36,7 +37,7 @@ class ParseFunc:
     Parse Func Obj
     """
     name : str
-    t_func: ast.FunctionDef = None
+    t_func: Optional[ast.FunctionDef] = None
     module_name: str = ''
     pakcage : str = ''
     args : List[str] = None

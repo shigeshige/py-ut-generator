@@ -1,5 +1,6 @@
 
 import ast
+from pyutgenerator.objects import MockFunc
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -210,3 +211,14 @@ def test_make_func_obj():
 
     # check
     assert ret.name == 'func1'
+
+
+def test_merge_mocks():
+    mocks = [
+        MockFunc('aaaa', True, 'bbb'),
+        MockFunc('aaaa', True, 'bbb'),
+        MockFunc('aaaa', True, 'bbb'),
+    ]
+
+    ret = ast_util.merge_mocks(mocks)
+    assert ret[0].call_count == 3

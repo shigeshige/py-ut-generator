@@ -51,6 +51,7 @@ STR_RUNS_PRE = '''    target = {}.{}()
 STR_WITH = '    with\\'
 STR_MOCK = "            patch('{}') as {}"
 STR_MOCK_RETURN = '        {}.return_value = {}'
+STR_MOCK_RETURN_MUL = '        {}.side_effect = [{}]'
 STR_MOCK_FUNC = '        {}.{} = MagicMock(return_value=None)'
 
 STR_RC = '\n'
@@ -131,7 +132,10 @@ def parse_mocks_return(mocks: List[MockFunc]):
     txt = []
     for i, moc in enumerate(mocks):
         if moc.has_return:
-            txt.append(STR_MOCK_RETURN.format('m' + str(i + 1), 'None'))
+            if moc.call_count > 1:
+                txt.append(STR_MOCK_RETURN_MUL.format('m' + str(i + 1), ', '.join(['None'] * moc.call_count)))
+            else:
+                txt.append(STR_MOCK_RETURN.format('m' + str(i + 1), 'None'))
             if moc.func_name:
                 txt.append(STR_MOCK_FUNC.format(
                     'm' + str(i + 1), moc.func_name))
