@@ -1,8 +1,11 @@
 [tool.poetry]
 name = "pyutgenerator"
-version = "0.4.0"
-description = ""
+version = "0.4.1"
+description = "python ut test code generator."
 authors = ["shigeshige <5540474+shigeshige@users.noreply.github.com>"]
+license = "MIT"
+homepage = "https://github.com/shigeshige/py-ut-generator"
+repository = "https://github.com/shigeshige/py-ut-generator"
 
 [tool.poetry.scripts]
 pyutgen = 'pyutgenerator.run:main'
