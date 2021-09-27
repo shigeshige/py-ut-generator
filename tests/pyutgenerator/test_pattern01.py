@@ -25,14 +25,13 @@ def test_01():
     assert mocks[0].mock_path == 'tests.pyutgenerator.data.pattern01.os.path'
 
 
-
 def test_output():
     """
     test
     """
     file_name = pattern01.__file__
     module = ast_util.create_ast(file_name)
-    
+
     pkg, mdn = files.get_package_moduel(file_name)
     t_file = files.get_test_file_name(pkg, mdn)
     ttt1 = run.make_test_code(module, pkg, mdn, True)

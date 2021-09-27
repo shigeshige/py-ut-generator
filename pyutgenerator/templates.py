@@ -81,7 +81,8 @@ def parse_func(fpo: ParseFunc):
 
     if fpo.has_return:
         checks = parse_assert(['ret'], fpo.mocks)
-    inits = '\n'.join([parse_varis(arg, 'None') for arg in fpo.args])
+    inits = '\n'.join([parse_varis(arg.arg_name, 'None' if not arg.values else (
+        '[' + ', '.join(map(str, arg.values)) + ']')) for arg in fpo.args])
 
     if fpo.mocks:
         run_txt = STR_TAB
@@ -91,24 +92,26 @@ def parse_func(fpo: ParseFunc):
             if fpo.has_return:
                 runs = run_txt + \
                     STR_RUNS_RETURN.format(
-                        mdn, fpo.class_name + '.' + fpo.name, ', '.join(fpo.args))
+                        mdn, fpo.class_name + '.' + fpo.name, ', '.join(fpo.get_arg_str()))
             else:
                 runs = run_txt + STR_RUNS.format(mdn,
                                                  fpo.class_name + '.' + fpo.name,
-                                                 ', '.join(fpo.args))
+                                                 ', '.join(fpo.get_arg_str()))
         else:
             runs = run_txt + STR_RUNS_PRE.format(mdn, fpo.class_name)
             if fpo.has_return:
                 runs += run_txt + \
-                    STR_RUNS_RETURN.format('target', fpo.name, ', '.join(fpo.args))
+                    STR_RUNS_RETURN.format('target', fpo.name, ', '.join(fpo.get_arg_str()))
             else:
                 runs += run_txt + \
-                    STR_RUNS.format('target', fpo.name, ', '.join(fpo.args))
+                    STR_RUNS.format('target', fpo.name, ', '.join(fpo.get_arg_str()))
     else:
         if fpo.has_return:
-            runs = run_txt + STR_RUNS_RETURN.format(mdn, fpo.name, ', '.join(fpo.args))
+            runs = run_txt + \
+                STR_RUNS_RETURN.format(mdn, fpo.name, ', '.join(fpo.get_arg_str()))
         else:
-            runs = run_txt + STR_RUNS.format(mdn, fpo.name, ', '.join(fpo.args))
+            runs = run_txt + \
+                STR_RUNS.format(mdn, fpo.name, ', '.join(fpo.get_arg_str()))
     mck = parse_mocks(fpo.mocks)
     mck_ret = parse_mocks_return(fpo.mocks)
     if fpo.mocks:
@@ -116,7 +119,13 @@ def parse_func(fpo: ParseFunc):
     else:
         txt_cheks = TEMP_FUNC_CHECK.format(checks)
 
-    return TEMP_FUNC.format(STR_PRE_FUNC + fpo.name, inits, mck, mck_ret, runs) + txt_cheks
+    return TEMP_FUNC.format(
+        STR_PRE_FUNC + fpo.name,
+        inits,
+        mck,
+        mck_ret,
+        runs) + txt_cheks
+
 
 def parse_varis(name, value):
     """
@@ -133,7 +142,8 @@ def parse_mocks_return(mocks: List[MockFunc]):
     for i, moc in enumerate(mocks):
         if moc.has_return:
             if moc.call_count > 1:
-                txt.append(STR_MOCK_RETURN_MUL.format('m' + str(i + 1), ', '.join(['None'] * moc.call_count)))
+                txt.append(STR_MOCK_RETURN_MUL.format(
+                    'm' + str(i + 1), ', '.join(['None'] * moc.call_count)))
             else:
                 txt.append(STR_MOCK_RETURN.format('m' + str(i + 1), 'None'))
             if moc.func_name:
