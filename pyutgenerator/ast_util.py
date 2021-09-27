@@ -8,7 +8,7 @@ import ast
 from typing import List, Optional
 
 from pyutgenerator import const, files
-from pyutgenerator.objects import CallFunc, MockFunc, ParseFunc
+from pyutgenerator.objects import CallFunc, FuncArg, MockFunc, ParseFunc
 
 
 def create_ast(file_name):
@@ -60,7 +60,6 @@ def has_test_function(test_module, func):
     return False
 
 
-
 def get_test_func(func_name):
     """
     test function name.
@@ -79,12 +78,40 @@ def has_return_val(func):
     return False
 
 
-def get_func_arg(func):
+def get_func_arg(func) -> List[FuncArg]:
     """
     関数の引数取得
     """
-    prms = [a.arg for a in func.args.args]
+    prms = [FuncArg(a.arg, get_variable_values(func, a.arg))
+            for a in func.args.args]
     return prms
+
+
+def get_variable_values(func, name):
+    """
+    Get variable values in function.
+    """
+
+    ret = []
+    for stm in ast.walk(func):
+        if _equals(stm, const.AST_COMP):
+            if (_equals(stm.left, const.AST_NAME)
+                    and stm.left.id == name
+                    and stm.comparators):
+                if _equals(stm.comparators[0], const.AST_CONST):
+                    # aaa > 0
+                    ret.append(stm.comparators[0].value)
+                if _equals(stm.comparators[0], const.AST_OPE):
+                    # aaa > -1
+                    ret.append(-stm.comparators[0].operand.value)
+            if (stm.comparators
+                    and _equals(stm.comparators[0], const.AST_NAME)
+                    and stm.comparators[0].id == name
+                    and _equals(stm.left, const.AST_CONST)):
+                # 1 > aaa
+                ret.append(stm.left.value)
+
+    return ret
 
 
 def get_calls(func) -> List[CallFunc]:
@@ -101,18 +128,18 @@ def get_calls(func) -> List[CallFunc]:
                 has_return = _has_return_call(stm, func)
                 cfo = CallFunc('', stm.func.id, has_return)
             # hoge.call(hoge)
-            if (_equals(stm.func,const.AST_ATTRIBUTE) 
+            if (_equals(stm.func, const.AST_ATTRIBUTE)
                     and _equals(stm.func.value, const.AST_NAME)):
                 has_return = _has_return_call(stm, func)
                 cfo = CallFunc(stm.func.value.id, stm.func.attr, has_return)
             # hoge.hoge.call(hoge)
-            if (_equals( stm.func, const.AST_ATTRIBUTE)
+            if (_equals(stm.func, const.AST_ATTRIBUTE)
                     and _equals(stm.func.value, const.AST_ATTRIBUTE)
                     and _equals(stm.func.value.value, const.AST_NAME)):
                 has_return = _has_return_call(stm, func)
                 cfo = CallFunc(
-                        stm.func.value.value.id, stm.func.attr, has_return,
-                        stm.func.value.attr)
+                    stm.func.value.value.id, stm.func.attr, has_return,
+                    stm.func.value.attr)
             if cfo:
                 cfo.ats = stm
                 calls.append(cfo)
@@ -123,7 +150,9 @@ def get_funcs(module) -> List[ast.FunctionDef]:
     """
     get function list
     """
-    return [stm for stm in ast.walk(module) if _equals(stm, const.AST_FUCNTION)]
+    return [
+        stm for stm in ast.walk(module) if _equals(
+            stm, const.AST_FUCNTION)]
 
 
 def _has_return_call(call_obj, func):
@@ -167,12 +196,22 @@ def _create_mock_func(stm, clf: CallFunc, pkg, mdn) -> Optional[MockFunc]:
     # from xxx import yyy
     if clf.module in list(map(lambda x: x.name, stm.names)):
         return MockFunc(
-            stm.module + '.' + clf.module + '.' + clf.func_name, clf.has_return)
+            stm.module +
+            '.' +
+            clf.module +
+            '.' +
+            clf.func_name,
+            clf.has_return)
     # from xxx.xxx import yyy
     if clf.func_name in list(map(lambda x: x.name, stm.names)):
         if clf.module:
             return MockFunc(
-                stm.module + '.' + clf.module + '.' + clf.func_name, clf.has_return)
+                stm.module +
+                '.' +
+                clf.module +
+                '.' +
+                clf.func_name,
+                clf.has_return)
         else:
             return MockFunc(
                 pkg + '.' + mdn + '.' + clf.func_name, clf.has_return)
@@ -197,11 +236,23 @@ def get_mocks(calls: List[CallFunc], module, pkg, mdn):
                     if clf.module2:
                         mocks.append(
                             MockFunc(
-                                pkg + '.' + mdn + '.' + clf.module + '.' + clf.module2,
-                                clf.has_return, clf.func_name))
+                                pkg +
+                                '.' +
+                                mdn +
+                                '.' +
+                                clf.module +
+                                '.' +
+                                clf.module2,
+                                clf.has_return,
+                                clf.func_name))
                     else:
                         # import xxx -> xxx.clf()
-                        mocks.append(MockFunc(clf.module + '.' + clf.func_name, clf.has_return))
+                        mocks.append(
+                            MockFunc(
+                                clf.module +
+                                '.' +
+                                clf.func_name,
+                                clf.has_return))
                     import_flg = True
             if _equals(stm, const.AST_IMPORT_FROM):
                 mck = _create_mock_func(stm, clf, pkg, mdn)
@@ -212,9 +263,17 @@ def get_mocks(calls: List[CallFunc], module, pkg, mdn):
         for stm in get_function(module):
             # def xxx():
             if not clf.module and clf.func_name == stm.name:
-                mocks.append(MockFunc(pkg + '.' + mdn + '.' + clf.func_name, clf.has_return))
+                mocks.append(
+                    MockFunc(
+                        pkg +
+                        '.' +
+                        mdn +
+                        '.' +
+                        clf.func_name,
+                        clf.has_return))
 
     return mocks
+
 
 def merge_mocks(mocks: List[MockFunc]):
     """
@@ -234,7 +293,7 @@ def merge_mocks(mocks: List[MockFunc]):
     return ret
 
 
-def get_import_names(stm : ast.Import):
+def get_import_names(stm: ast.Import):
     """
     join import names.
     """
@@ -248,7 +307,12 @@ def _equals(stm, class_name) -> bool:
     return stm.__class__.__name__ == class_name
 
 
-def make_func_obj(t_func : ast.FunctionDef, package, module_name, module, class_name='') -> ParseFunc:
+def make_func_obj(
+        t_func: ast.FunctionDef,
+        package,
+        module_name,
+        module,
+        class_name='') -> ParseFunc:
     """
     関数解析
     """

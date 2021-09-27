@@ -12,11 +12,14 @@ from tests.pyutgenerator.data import td_funcs
 def _get_module():
     return ast_util.create_ast(td_funcs.__file__)
 
+
 def _get_func():
     return ast_util.create_ast(td_funcs.__file__).body[2]
 
+
 def _get_func2():
     return ast_util.create_ast(td_funcs.__file__).body[3]
+
 
 def test_create_ast():
     """
@@ -30,6 +33,7 @@ def test_create_ast():
     # check
     assert ret
 
+
 def test_get_function():
     """
     test
@@ -42,6 +46,7 @@ def test_get_function():
     # check
     assert ret[0].name == 'func1'
     assert ret[1].name == 'func2'
+
 
 def test_get_function_class():
     """
@@ -57,6 +62,7 @@ def test_get_function_class():
     assert ret[0][1] == 'T001'
     assert ret[1][0].name == 'tf02'
     assert ret[1][1] == 'T001'
+
 
 def test_has_test_function():
     """
@@ -85,11 +91,11 @@ def test_get_test_func():
     func_name = 'func1'
     # do
 
-
     ret = ast_util.get_test_func(func_name)
 
     # check
     assert ret == 'test_func1'
+
 
 def test_has_return_val():
     """
@@ -103,18 +109,20 @@ def test_has_return_val():
     # check
     assert ret
 
+
 def test_get_func_arg():
     """
     test
     """
     # plan
-    func =  _get_func2()
+    func = _get_func2()
 
     # do
     ret = ast_util.get_func_arg(func)
 
     # check
-    assert ret == ['prm1', 'prm2']
+    assert [x.arg_name for x in ret] == ['prm1', 'prm2']
+
 
 def test_get_calls():
     """
@@ -128,6 +136,7 @@ def test_get_calls():
     # check
     assert ret[0].func_name == 'func1'
 
+
 def test_get_funcs():
     """
     test
@@ -140,6 +149,7 @@ def test_get_funcs():
     # check
     assert ret[0].name == 'func1'
 
+
 def test__has_return_call():
     """
     test
@@ -151,8 +161,7 @@ def test__has_return_call():
     ret = ast_util._has_return_call(call_obj, func)
 
     # check
-    assert not ret # TODO
-
+    assert not ret  # TODO
 
 
 def test_get_mocks():
@@ -176,13 +185,16 @@ def test_get_import_names():
     test
     """
     # plan
-    stm = [x for x in ast.walk(_get_module()) if x.__class__.__name__ == 'Import'][0]
+    stm = [
+        x for x in ast.walk(
+            _get_module()) if x.__class__.__name__ == 'Import'][0]
     # do
 
     ret = ast_util.get_import_names(stm)
 
     # check
     assert ret == 'os'
+
 
 def test__equals():
     """
@@ -195,6 +207,7 @@ def test__equals():
     ret = ast_util._equals(stm, class_name)
     # check
     assert ret
+
 
 def test_make_func_obj():
     """
