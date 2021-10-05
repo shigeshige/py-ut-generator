@@ -1,7 +1,7 @@
 #  Python UT generator
 This tools generate automatically Python pytest Unit test code.  
 This project uses ast module to generate.  
-Easy to make coverage test.
+Easy to make coverage test. And Easy to customize test code.
 
 ### feature
 
@@ -9,11 +9,11 @@ Easy to make coverage test.
 * Generate pytest test function from each function.
 * Generate mock patch syntax code.
 * Generate argument syntax code to call.
-* if function has return value, create assert return.
+* If function has return value, create assert return.
 
 ## Installation
 
-### install pip
+### Install pip
 
 ```
 pip install pyutgenerator
@@ -23,7 +23,7 @@ https://pypi.org/project/pyutgenerator/
 
 ## Run tool.
 
-### genarete test code
+### Genarete test code
 
 
 ```
@@ -31,7 +31,7 @@ pyutgen "Input File Name"
 ```
 
 
-### sample input file
+### Sample input file
 
 ```
 import os
@@ -45,7 +45,7 @@ def aaaaa():
 
 ```
 
-### sample out put
+### Sample out put
 
 ```
 
@@ -69,15 +69,25 @@ def test_aaaaa():
         assert ret
 
 ```
-### for future
+### For the future
 
-* regist pypi.
-* customize parameter options.
-* parameter type for str,list, obj ...
-* write return_value.
-* exception check.
-* call default and pass test.
-* genarete various parameters for test.
+* For Code
+    * Genarete various parameters for test.
+    * Write return check value.
+    * 'exception' check.
+    * 'with' description mock.
+    * Generate test data.
+    * Assertion for method call for count, parameter, throw.
+    * parameter type for str,list, obj ...
+    * Simple code analyst report. like no None check or Parameter 
+    * For django
+* Customize parameter options or setting file.
+    * Exclude function mock.
+    * Source directory path. 
+    * tab space num.
+* Get test data from debug. 
+* able to run default generated code and pass test.
+* Full coverage.
 * web ui for test.
 
 ### Prerequisites
