@@ -5,7 +5,7 @@ copyrigth https://github.com/shigeshige/py-ut-generator
 """
 
 import ast
-from typing import List, Optional
+from typing import List, Optional, cast
 
 from pyutgenerator import const, files
 from pyutgenerator.objects import CallFunc, FuncArg, MockFunc, ParseFunc
@@ -95,21 +95,22 @@ def get_variable_values(func, name):
     ret = []
     for stm in ast.walk(func):
         if _equals(stm, const.AST_COMP):
-            if (_equals(stm.left, const.AST_NAME)
-                    and stm.left.id == name
-                    and stm.comparators):
-                if _equals(stm.comparators[0], const.AST_CONST):
+            stm2 = cast(ast.Compare, stm)
+            if (_equals(stm2.left, const.AST_NAME)
+                    and stm2.left.id == name
+                    and stm2.comparators):
+                if _equals(stm2.comparators[0], const.AST_CONST):
                     # aaa > 0
-                    ret.append(stm.comparators[0].value)
-                if _equals(stm.comparators[0], const.AST_OPE):
+                    ret.append(stm2.comparators[0].value)
+                if _equals(stm2.comparators[0], const.AST_OPE):
                     # aaa > -1
-                    ret.append(-stm.comparators[0].operand.value)
-            if (stm.comparators
-                    and _equals(stm.comparators[0], const.AST_NAME)
-                    and stm.comparators[0].id == name
-                    and _equals(stm.left, const.AST_CONST)):
+                    ret.append(-stm2.comparators[0].operand.value)
+            if (stm2.comparators
+                    and _equals(stm2.comparators[0], const.AST_NAME)
+                    and stm2.comparators[0].id == name
+                    and _equals(stm2.left, const.AST_CONST)):
                 # 1 > aaa
-                ret.append(stm.left.value)
+                ret.append(stm2.left.value)
 
     return ret
 
@@ -121,25 +122,26 @@ def get_calls(func) -> List[CallFunc]:
     calls = []
     for stm in ast.walk(func):
         if _equals(stm, const.AST_CALL):
+            stm2 = cast(ast.Call, stm)
             # print('---cal--')
             # call(hoge)
             cfo = None
-            if _equals(stm.func, const.AST_NAME):
+            if _equals(stm2.func, const.AST_NAME):
                 has_return = _has_return_call(stm, func)
-                cfo = CallFunc('', stm.func.id, has_return)
+                cfo = CallFunc('', stm2.func.id, has_return)
             # hoge.call(hoge)
-            if (_equals(stm.func, const.AST_ATTRIBUTE)
-                    and _equals(stm.func.value, const.AST_NAME)):
+            if (_equals(stm2.func, const.AST_ATTRIBUTE)
+                    and _equals(stm2.func.value, const.AST_NAME)):
                 has_return = _has_return_call(stm, func)
-                cfo = CallFunc(stm.func.value.id, stm.func.attr, has_return)
+                cfo = CallFunc(stm2.func.value.id, stm2.func.attr, has_return)
             # hoge.hoge.call(hoge)
-            if (_equals(stm.func, const.AST_ATTRIBUTE)
-                    and _equals(stm.func.value, const.AST_ATTRIBUTE)
-                    and _equals(stm.func.value.value, const.AST_NAME)):
+            if (_equals(stm2.func, const.AST_ATTRIBUTE)
+                    and _equals(stm2.func.value, const.AST_ATTRIBUTE)
+                    and _equals(stm2.func.value.value, const.AST_NAME)):
                 has_return = _has_return_call(stm, func)
                 cfo = CallFunc(
-                    stm.func.value.value.id, stm.func.attr, has_return,
-                    stm.func.value.attr)
+                    stm2.func.value.value.id, stm2.func.attr, has_return,
+                    stm2.func.value.attr)
             if cfo:
                 cfo.ats = stm
                 calls.append(cfo)
@@ -151,7 +153,7 @@ def get_funcs(module) -> List[ast.FunctionDef]:
     get function list
     """
     return [
-        stm for stm in ast.walk(module) if _equals(
+        cast(ast.FunctionDef, stm) for stm in ast.walk(module) if _equals(
             stm, const.AST_FUCNTION)]
 
 
