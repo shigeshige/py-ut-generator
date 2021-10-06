@@ -51,6 +51,8 @@ STR_RUNS_PRE = '''    target = {}.{}()
 STR_WITH = '    with\\'
 STR_MOCK = "            patch('{}') as {}"
 STR_MOCK_RETURN = '        {}.return_value = {}'
+STR_MOCK_RETURN_MOCK = '        {}.return_value = MagicMock()'
+STR_MOCK_RETURN_MOCK2 = '        {}.return_value.{} = MagicMock()'
 STR_MOCK_RETURN_MUL = '        {}.side_effect = [{}]'
 STR_MOCK_FUNC = '        {}.{} = MagicMock(return_value=None)'
 
@@ -119,12 +121,7 @@ def parse_func(fpo: ParseFunc):
     else:
         txt_cheks = TEMP_FUNC_CHECK.format(checks)
 
-    return TEMP_FUNC.format(
-        STR_PRE_FUNC + fpo.name,
-        inits,
-        mck,
-        mck_ret,
-        runs) + txt_cheks
+    return TEMP_FUNC.format(STR_PRE_FUNC + fpo.name, inits, mck, mck_ret, runs) + txt_cheks
 
 
 def parse_varis(name, value):
@@ -140,12 +137,18 @@ def parse_mocks_return(mocks: List[MockFunc]):
     """
     txt = []
     for i, moc in enumerate(mocks):
-        if moc.has_return:
+        if moc.callFunc and moc.callFunc.is_with:
+            ttt = STR_MOCK_RETURN_MOCK.format('m' + str(i + 1))
+            txt.append(ttt)
+            ttt = STR_MOCK_RETURN_MOCK2.format('m' + str(i + 1), '__enter__')
+            txt.append(ttt)
+        elif moc.has_return:
             if moc.call_count > 1:
-                txt.append(STR_MOCK_RETURN_MUL.format(
-                    'm' + str(i + 1), ', '.join(['None'] * moc.call_count)))
+                ttt = STR_MOCK_RETURN_MUL.format('m' + str(i + 1), ', '.join(['None'] * moc.call_count))
+                txt.append(ttt)
             else:
-                txt.append(STR_MOCK_RETURN.format('m' + str(i + 1), 'None'))
+                ttt = STR_MOCK_RETURN.format('m' + str(i + 1), 'None')
+                txt.append(ttt)
             if moc.func_name:
                 txt.append(STR_MOCK_FUNC.format(
                     'm' + str(i + 1), moc.func_name))

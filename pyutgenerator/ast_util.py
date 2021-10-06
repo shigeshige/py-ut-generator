@@ -236,25 +236,18 @@ def get_mocks(calls: List[CallFunc], module, pkg, mdn):
                 elif names == clf.module:
                     # import xxx -> xxx.yyy.clf()
                     if clf.module2:
-                        mocks.append(
-                            MockFunc(
-                                pkg +
-                                '.' +
-                                mdn +
-                                '.' +
-                                clf.module +
-                                '.' +
-                                clf.module2,
-                                clf.has_return,
-                                clf.func_name))
+                        mck = MockFunc(
+                            pkg + '.' + mdn + '.' +
+                            clf.module + '.' + clf.module2, clf.has_return, clf.func_name)
+                        mck.callFunc = clf
+                        mocks.append(mck)
                     else:
                         # import xxx -> xxx.clf()
-                        mocks.append(
-                            MockFunc(
-                                clf.module +
-                                '.' +
-                                clf.func_name,
-                                clf.has_return))
+                        mck = MockFunc(
+                            clf.module + '.' +
+                            clf.func_name, clf.has_return)
+                        mck.callFunc = clf
+                        mocks.append(mck)
                     import_flg = True
             if _equals(stm, const.AST_IMPORT_FROM):
                 mck = _create_mock_func(stm, clf, pkg, mdn)
@@ -265,10 +258,9 @@ def get_mocks(calls: List[CallFunc], module, pkg, mdn):
         for stm in get_function(module):
             # def xxx():
             if not clf.module and clf.func_name == stm.name:
-                mocks.append(
-                    MockFunc(
-                        pkg + '.' + mdn +
-                        '.' + clf.func_name, clf.has_return))
+                mck = MockFunc(pkg + '.' + mdn + '.' + clf.func_name, clf.has_return)
+                mck.callFunc = clf
+                mocks.append(mck)
 
     return mocks
 
@@ -291,6 +283,20 @@ def merge_mocks(mocks: List[MockFunc]):
     return ret
 
 
+def calls_with(t_func: ast.FunctionDef, calls: List[CallFunc]):
+    """
+    analyze call with.
+    """
+    for stm in ast.walk(t_func):
+        if _equals(stm, const.AST_WITH):
+            stm2 = cast(ast.With, stm)
+            for call in calls:
+                for stm3 in ast.walk(stm2.items[0]):
+                    if stm3 is call.ats:
+                        # with call() as xx:
+                        call.is_with = True
+
+
 def get_import_names(stm: ast.Import):
     """
     join import names.
@@ -310,13 +316,14 @@ def make_func_obj(
     """
     関数解析
     """
-
+    calls = get_calls(t_func)
+    calls_with(t_func, calls)
     pfo = ParseFunc(
         t_func.name, t_func,
         module_name,
         package,
         get_func_arg(t_func),
-        get_calls(t_func),
+        calls,
         has_return_val(t_func))
     pfo.class_func = len(
         list(
@@ -324,7 +331,7 @@ def make_func_obj(
                 lambda x: getattr(x, 'id', None) in [
                     'staticmethod', 'classmethod'],
                 t_func.decorator_list))) != 0
-    pfo.mocks = get_mocks(pfo.calls, module, package, module_name)
+    pfo.mocks = get_mocks(calls, module, package, module_name)
     pfo.mocks = merge_mocks(pfo.mocks)
     pfo.class_name = class_name
     return pfo
