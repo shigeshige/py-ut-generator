@@ -19,6 +19,8 @@ class CallFunc:
     module2: Optional[str] = None
     class_name: Optional[str] = None
     ats: Optional[ast.AST] = None
+    is_with: bool = False
+    call_calls: List = field(default_factory=list)
 
 
 @dataclass
@@ -40,6 +42,7 @@ class MockFunc:
     has_return: bool = False
     func_name: Optional[str] = None
     call_count: int = 1
+    callFunc: Optional[CallFunc] = None
 
 
 @dataclass
@@ -63,4 +66,4 @@ class ParseFunc:
         argument to str.
         """
         return [(x.arg_name + '[0]')
-                if x.values else 'x.arg_name' for x in self.args]
+                if x.values else x.arg_name for x in self.args]
