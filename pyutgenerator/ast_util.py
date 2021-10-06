@@ -267,12 +267,8 @@ def get_mocks(calls: List[CallFunc], module, pkg, mdn):
             if not clf.module and clf.func_name == stm.name:
                 mocks.append(
                     MockFunc(
-                        pkg +
-                        '.' +
-                        mdn +
-                        '.' +
-                        clf.func_name,
-                        clf.has_return))
+                        pkg + '.' + mdn +
+                        '.' + clf.func_name, clf.has_return))
 
     return mocks
 
@@ -310,11 +306,7 @@ def _equals(stm, class_name) -> bool:
 
 
 def make_func_obj(
-        t_func: ast.FunctionDef,
-        package,
-        module_name,
-        module,
-        class_name='') -> ParseFunc:
+        t_func: ast.FunctionDef, package, module_name, module, class_name='') -> ParseFunc:
     """
     関数解析
     """
