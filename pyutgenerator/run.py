@@ -64,12 +64,11 @@ def main():
     """
     pas = argparse.ArgumentParser()
     pas.add_argument("filename", help="input python filename")
-    pas.add_argument(
-        "--ovewrite", help="overwrite test code", action="store_true")
+    pas.add_argument("--overwrite", help="overwrite test code", action="store_true")
     args = pas.parse_args()
     print('input:' + args.filename)
     # print(args.ovewrite)
-    parse_file(args.filename, args.ovewrite)
+    parse_file(args.filename, args.overwrite)
     return
 
 
