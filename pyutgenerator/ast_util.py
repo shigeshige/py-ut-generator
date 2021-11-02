@@ -78,12 +78,14 @@ def has_return_val(func):
     return False
 
 
-def get_func_arg(func) -> List[FuncArg]:
+def get_func_arg(func, is_class: bool) -> List[FuncArg]:
     """
     関数の引数取得
     """
     prms = [FuncArg(a.arg, get_variable_values(func, a.arg))
             for a in func.args.args]
+    if is_class:
+        return prms[1:]
     return prms
 
 
@@ -142,8 +144,12 @@ def get_calls(func) -> List[CallFunc]:
                 cfo = CallFunc(
                     stm2.func.value.value.id, stm2.func.attr, has_return,
                     stm2.func.value.attr)
+            if (_equals(stm2.func, const.AST_ATTRIBUTE)
+                    and _equals(stm2.func.value, const.AST_CALL)):
+                has_return = _has_return_call(stm, func)
+                cfo = CallFunc('', stm2.func.attr, has_return)
             if cfo:
-                cfo.ats = stm
+                cfo.ats = stm2
                 calls.append(cfo)
     return calls
 
@@ -275,6 +281,8 @@ def merge_mocks(mocks: List[MockFunc]):
         for mk2 in ret:
             if mk1.mock_path == mk2.mock_path and mk1.func_name == mk2.func_name:
                 mk2.call_count += 1
+                if mk1.callFunc and mk2.callFunc:
+                    mk2.callFunc.call_calls.extend(mk1.callFunc.call_calls)
                 same = True
                 break
         if not same:
@@ -297,6 +305,24 @@ def calls_with(t_func: ast.FunctionDef, calls: List[CallFunc]):
                         call.is_with = True
 
 
+def analyze_call_for_call(calls: List[CallFunc]):
+    """
+    analyze call returns call
+    """
+    rets = []
+    for call1 in calls:
+        flg = False
+        for call2 in calls:
+            if (call1.ats and _equals(call1.ats.func, const.AST_ATTRIBUTE)
+                    and call1.ats.func.value is call2.ats):
+                flg = True
+                # c02().c01()
+                call2.call_calls.append(call1)
+        if not flg:
+            rets.append(call1)
+    return rets
+
+
 def get_import_names(stm: ast.Import):
     """
     join import names.
@@ -317,12 +343,13 @@ def make_func_obj(
     関数解析
     """
     calls = get_calls(t_func)
+    calls = analyze_call_for_call(calls)
     calls_with(t_func, calls)
     pfo = ParseFunc(
         t_func.name, t_func,
         module_name,
         package,
-        get_func_arg(t_func),
+        get_func_arg(t_func, class_name),
         calls,
         has_return_val(t_func))
     pfo.class_func = len(

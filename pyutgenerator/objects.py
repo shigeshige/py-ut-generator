@@ -18,7 +18,7 @@ class CallFunc:
     has_return: bool = False
     module2: Optional[str] = None
     class_name: Optional[str] = None
-    ats: Optional[ast.AST] = None
+    ats: Optional[ast.Call] = None
     is_with: bool = False
     call_calls: List = field(default_factory=list)
 

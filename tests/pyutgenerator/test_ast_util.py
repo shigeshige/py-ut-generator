@@ -118,7 +118,7 @@ def test_get_func_arg():
     func = _get_func2()
 
     # do
-    ret = ast_util.get_func_arg(func)
+    ret = ast_util.get_func_arg(func, False)
 
     # check
     assert [x.arg_name for x in ret] == ['prm1', 'prm2']

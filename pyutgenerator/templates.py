@@ -4,9 +4,9 @@ Generate test code tool
 copyrigth https://github.com/shigeshige/py-ut-generator
 """
 
-from typing import List
+from typing import List, cast
 
-from pyutgenerator.objects import MockFunc, ParseFunc
+from pyutgenerator.objects import MockFunc, ParseFunc, CallFunc
 
 STR_PRE_FUNC = 'test_'
 
@@ -50,11 +50,13 @@ STR_RUNS_PRE = '''    target = {}.{}()
 
 STR_WITH = '    with\\'
 STR_MOCK = "            patch('{}') as {}"
+STR_MOCK_RETURN0 = '        {}.return_value'
 STR_MOCK_RETURN = '        {}.return_value = {}'
 STR_MOCK_RETURN_MOCK = '        {}.return_value = MagicMock()'
 STR_MOCK_RETURN_MOCK2 = '        {}.return_value.{} = MagicMock()'
 STR_MOCK_RETURN_MUL = '        {}.side_effect = [{}]'
 STR_MOCK_FUNC = '        {}.{} = MagicMock(return_value=None)'
+STR_MOCK_FUNC2 = '{}.{} = MagicMock(return_value=None)'
 
 STR_RC = '\n'
 STR_ASSERT = '    assert {}'
@@ -131,17 +133,39 @@ def parse_varis(name, value):
     return STR_VARIS.format(name, value)
 
 
+def _parse_mock_call(callFunc: CallFunc, txt: str):
+    """
+    mock for mock
+    """
+
+    txts = []
+    if callFunc:
+        for call in callFunc.call_calls:
+            ccall = cast(CallFunc, call)
+            ttt = STR_MOCK_FUNC2.format(txt, ccall.func_name)
+            txts.append(ttt)
+            if ccall.call_calls:
+                for cc2 in ccall.call_calls:
+                    txts.extend(_parse_mock_call(cc2, ttt))
+    return txts
+
+
 def parse_mocks_return(mocks: List[MockFunc]):
     """
     m.return_value = None
     """
     txt = []
     for i, moc in enumerate(mocks):
+        ttt = ''
         if moc.callFunc and moc.callFunc.is_with:
             ttt = STR_MOCK_RETURN_MOCK.format('m' + str(i + 1))
             txt.append(ttt)
             ttt = STR_MOCK_RETURN_MOCK2.format('m' + str(i + 1), '__enter__')
             txt.append(ttt)
+        elif moc.callFunc and moc.callFunc.call_calls:
+            ttt = STR_MOCK_RETURN_MOCK.format('m' + str(i + 1))
+            txt.append(ttt)
+            txt.extend(_parse_mock_call(moc.callFunc, STR_MOCK_RETURN0.format('m' + str(i + 1))))
         elif moc.has_return:
             if moc.call_count > 1:
                 ttt = STR_MOCK_RETURN_MUL.format('m' + str(i + 1), ', '.join(['None'] * moc.call_count))
@@ -150,8 +174,8 @@ def parse_mocks_return(mocks: List[MockFunc]):
                 ttt = STR_MOCK_RETURN.format('m' + str(i + 1), 'None')
                 txt.append(ttt)
             if moc.func_name:
-                txt.append(STR_MOCK_FUNC.format(
-                    'm' + str(i + 1), moc.func_name))
+                ttt = STR_MOCK_FUNC.format('m' + str(i + 1), moc.func_name)
+                txt.append(ttt)
 
     return STR_RC.join(txt)
 
