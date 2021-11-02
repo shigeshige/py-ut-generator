@@ -55,7 +55,8 @@ STR_MOCK_RETURN = '        {}.return_value = {}'
 STR_MOCK_RETURN_MOCK = '        {}.return_value = MagicMock()'
 STR_MOCK_RETURN_MOCK2 = '        {}.return_value.{} = MagicMock()'
 STR_MOCK_RETURN_MUL = '        {}.side_effect = [{}]'
-STR_MOCK_FUNC = '{}.{} = MagicMock(return_value=None)'
+STR_MOCK_FUNC = '        {}.{} = MagicMock(return_value=None)'
+STR_MOCK_FUNC2 = '{}.{} = MagicMock(return_value=None)'
 
 STR_RC = '\n'
 STR_ASSERT = '    assert {}'
@@ -141,7 +142,7 @@ def _parse_mock_call(callFunc: CallFunc, txt: str):
     if callFunc:
         for call in callFunc.call_calls:
             ccall = cast(CallFunc, call)
-            ttt = STR_MOCK_FUNC.format(txt, ccall.func_name)
+            ttt = STR_MOCK_FUNC2.format(txt, ccall.func_name)
             txts.append(ttt)
             if ccall.call_calls:
                 for cc2 in ccall.call_calls:
