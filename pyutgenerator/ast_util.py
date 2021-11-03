@@ -27,7 +27,7 @@ def get_function(module) -> List[ast.FunctionDef]:
     """
     funcs = []
     for stm in module.body:
-        if _equals(stm, const.AST_FUCNTION):
+        if isinstance(stm, ast.FunctionDef):
             funcs.append(stm)
     return funcs
 
@@ -39,9 +39,9 @@ def get_function_class(module):
     funcs = []
     for stm in module.body:
         # class define
-        if _equals(stm, const.AST_CLASS):
+        if isinstance(stm, ast.ClassDef):
             for stm2 in stm.body:
-                if _equals(stm2, const.AST_FUCNTION):
+                if isinstance(stm2, ast.FunctionDef):
                     funcs.append((stm2, stm.name))
     return funcs
 
@@ -54,7 +54,7 @@ def has_test_function(test_module, func):
         return False
 
     for stm in ast.walk(test_module):
-        if _equals(stm, const.AST_FUCNTION):
+        if isinstance(stm, ast.FunctionDef):
             if get_test_func(func.name) == stm.name:
                 return True
     return False
@@ -72,7 +72,7 @@ def has_return_val(func):
     返却値があるか？
     """
     for stm in ast.walk(func):
-        if _equals(stm, const.AST_RETURN):
+        if isinstance(stm, ast.Return):
             if stm.value:
                 return True
     return False
@@ -96,23 +96,23 @@ def get_variable_values(func, name):
 
     ret = []
     for stm in ast.walk(func):
-        if _equals(stm, const.AST_COMP):
-            stm2 = cast(ast.Compare, stm)
-            if (_equals(stm2.left, const.AST_NAME)
-                    and stm2.left.id == name
-                    and stm2.comparators):
-                if _equals(stm2.comparators[0], const.AST_CONST):
+        if isinstance(stm, ast.Compare):
+            if (isinstance(stm.left, ast.Name)
+                    and stm.left.id == name
+                    and stm.comparators):
+                if isinstance(stm.comparators[0], ast.Constant):
                     # aaa > 0
-                    ret.append(stm2.comparators[0].value)
-                if _equals(stm2.comparators[0], const.AST_OPE):
+                    ret.append(stm.comparators[0].value)
+                if (isinstance(stm.comparators[0], ast.UnaryOp)
+                        and isinstance(stm.comparators[0].operand, ast.Constant)):
                     # aaa > -1
-                    ret.append(-stm2.comparators[0].operand.value)
-            if (stm2.comparators
-                    and _equals(stm2.comparators[0], const.AST_NAME)
-                    and stm2.comparators[0].id == name
-                    and _equals(stm2.left, const.AST_CONST)):
+                    ret.append(-stm.comparators[0].operand.value)
+            if (stm.comparators
+                    and isinstance(stm.comparators[0], ast.Name)
+                    and stm.comparators[0].id == name
+                    and isinstance(stm.left, ast.Constant)):
                 # 1 > aaa
-                ret.append(stm2.left.value)
+                ret.append(stm.left.value)
 
     return ret
 
@@ -123,33 +123,32 @@ def get_calls(func) -> List[CallFunc]:
     """
     calls = []
     for stm in ast.walk(func):
-        if _equals(stm, const.AST_CALL):
-            stm2 = cast(ast.Call, stm)
+        if isinstance(stm, ast.Call):
             # print('---cal--')
             # call(hoge)
             cfo = None
-            if _equals(stm2.func, const.AST_NAME):
+            if isinstance(stm.func, ast.Name):
                 has_return = _has_return_call(stm, func)
-                cfo = CallFunc('', stm2.func.id, has_return)
+                cfo = CallFunc('', stm.func.id, has_return)
             # hoge.call(hoge)
-            if (_equals(stm2.func, const.AST_ATTRIBUTE)
-                    and _equals(stm2.func.value, const.AST_NAME)):
+            if (isinstance(stm.func, ast.Attribute)
+                    and isinstance(stm.func.value, ast.Name)):
                 has_return = _has_return_call(stm, func)
-                cfo = CallFunc(stm2.func.value.id, stm2.func.attr, has_return)
+                cfo = CallFunc(stm.func.value.id, stm.func.attr, has_return)
             # hoge.hoge.call(hoge)
-            if (_equals(stm2.func, const.AST_ATTRIBUTE)
-                    and _equals(stm2.func.value, const.AST_ATTRIBUTE)
-                    and _equals(stm2.func.value.value, const.AST_NAME)):
+            if (isinstance(stm.func, ast.Attribute)
+                    and isinstance(stm.func.value, ast.Attribute)
+                    and isinstance(stm.func.value.value, ast.Name)):
                 has_return = _has_return_call(stm, func)
                 cfo = CallFunc(
-                    stm2.func.value.value.id, stm2.func.attr, has_return,
-                    stm2.func.value.attr)
-            if (_equals(stm2.func, const.AST_ATTRIBUTE)
-                    and _equals(stm2.func.value, const.AST_CALL)):
+                    stm.func.value.value.id, stm.func.attr, has_return,
+                    stm.func.value.attr)
+            if (isinstance(stm.func, ast.Attribute)
+                    and isinstance(stm.func.value, ast.Call)):
                 has_return = _has_return_call(stm, func)
-                cfo = CallFunc('', stm2.func.attr, has_return)
+                cfo = CallFunc('', stm.func.attr, has_return)
             if cfo:
-                cfo.ats = stm2
+                cfo.ats = stm
                 calls.append(cfo)
     return calls
 
@@ -159,8 +158,8 @@ def get_funcs(module) -> List[ast.FunctionDef]:
     get function list
     """
     return [
-        cast(ast.FunctionDef, stm) for stm in ast.walk(module) if _equals(
-            stm, const.AST_FUCNTION)]
+        cast(ast.FunctionDef, stm) for stm in ast.walk(module) if isinstance(
+            stm, ast.FunctionDef)]
 
 
 def _has_return_call(call_obj, func):
@@ -169,27 +168,27 @@ def _has_return_call(call_obj, func):
     """
     for stm in ast.walk(func):
         # bbb = aaa()
-        if _equals(stm, const.AST_ASSIGN):
+        if isinstance(stm, ast.Assign):
             for stm2 in ast.walk(stm.value):
                 if stm2 is call_obj:
                     return True
         # bbb(aaa())
-        if _equals(stm, const.AST_CALL):
+        if isinstance(stm, ast.Call):
             for stm2 in [j for i in stm.args for j in ast.walk(i)]:
                 if stm2 is call_obj:
                     return True
         # if aaa():
-        if _equals(stm, const.AST_IF) or _equals(stm, const.AST_WHILE):
+        if isinstance(stm, ast.If) or isinstance(stm, ast.While):
             for stm2 in ast.walk(stm.test):
                 if stm2 is call_obj:
                     return True
         # with aaa() as bbb
-        if _equals(stm, const.AST_WITH):
+        if isinstance(stm, ast.With):
             for stm2 in ast.walk(stm):
                 if stm2 is call_obj:
                     return True
         # return aaa()
-        if _equals(stm, const.AST_RETURN):
+        if isinstance(stm, ast.Return):
             for stm2 in ast.walk(stm):
                 if stm2 is call_obj:
                     return True
@@ -234,7 +233,7 @@ def get_mocks(calls: List[CallFunc], module, pkg, mdn):
     for clf in calls:
         import_flg = False
         for stm in ast.walk(module):
-            if _equals(stm, const.AST_IMPORT):
+            if isinstance(stm, ast.Import):
                 names = get_import_names(stm)
                 if names == clf.func_name and not clf.module:
                     # import xxx
@@ -255,7 +254,7 @@ def get_mocks(calls: List[CallFunc], module, pkg, mdn):
                         mck.callFunc = clf
                         mocks.append(mck)
                     import_flg = True
-            if _equals(stm, const.AST_IMPORT_FROM):
+            if isinstance(stm, ast.ImportFrom):
                 mck = _create_mock_func(stm, clf, pkg, mdn)
                 if mck is not None:
                     mocks.append(mck)
@@ -296,10 +295,9 @@ def calls_with(t_func: ast.FunctionDef, calls: List[CallFunc]):
     analyze call with.
     """
     for stm in ast.walk(t_func):
-        if _equals(stm, const.AST_WITH):
-            stm2 = cast(ast.With, stm)
+        if isinstance(stm, ast.With):
             for call in calls:
-                for stm3 in ast.walk(stm2.items[0]):
+                for stm3 in ast.walk(stm.items[0]):
                     if stm3 is call.ats:
                         # with call() as xx:
                         call.is_with = True
@@ -313,7 +311,7 @@ def analyze_call_for_call(calls: List[CallFunc]):
     for call1 in calls:
         flg = False
         for call2 in calls:
-            if (call1.ats and _equals(call1.ats.func, const.AST_ATTRIBUTE)
+            if (call1.ats and isinstance(call1.ats.func, ast.Attribute)
                     and call1.ats.func.value is call2.ats):
                 flg = True
                 # c02().c01()
@@ -328,13 +326,6 @@ def get_import_names(stm: ast.Import):
     join import names.
     """
     return '.'.join([x.name for x in stm.names])
-
-
-def _equals(stm, class_name) -> bool:
-    """
-    check class name.
-    """
-    return stm.__class__.__name__ == class_name
 
 
 def make_func_obj(
