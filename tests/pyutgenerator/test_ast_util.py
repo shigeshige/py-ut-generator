@@ -196,19 +196,6 @@ def test_get_import_names():
     assert ret == 'os'
 
 
-def test__equals():
-    """
-    test
-    """
-    # plan
-    stm = _get_func()
-    class_name = 'FunctionDef'
-    # do
-    ret = ast_util._equals(stm, class_name)
-    # check
-    assert ret
-
-
 def test_make_func_obj():
     """
     test
