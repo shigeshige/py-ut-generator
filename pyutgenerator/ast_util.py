@@ -162,6 +162,36 @@ def get_funcs(module) -> List[ast.FunctionDef]:
             stm, ast.FunctionDef)]
 
 
+def _get_parent(child: Optional[ast.AST], func: ast.AST) -> Optional[ast.AST]:
+
+    if child is None:
+        return None
+
+    for stm in ast.walk(func):
+        if hasattr(stm, 'value'):
+            if getattr(stm, 'value') is child:
+                return stm
+    return None
+
+
+def _is_same_origin(stm1: ast.AST, stm2: ast.AST, func: ast.AST) -> bool:
+    """
+    same origin val
+    """
+    name1 = None
+    name2 = None
+    if isinstance(stm1, ast.Assign) and isinstance(stm1.targets[0], ast.Name):
+        name1 = stm1.targets[0].id
+    if isinstance(stm1, ast.Attribute) and isinstance(stm1.value, ast.Name):
+        name1 = stm1.value.id
+    if isinstance(stm2, ast.Assign) and isinstance(stm2.targets[0], ast.Name):
+        name2 = stm2.targets[0].id
+    if isinstance(stm2, ast.Attribute) and isinstance(stm2.value, ast.Name):
+        name2 = stm2.value.id
+
+    return name1 is not None and name2 is not None and name1 == name2
+
+
 def _has_return_call(call_obj, func):
     """
     call ast uses return value?
@@ -281,7 +311,10 @@ def merge_mocks(mocks: List[MockFunc]):
             if mk1.mock_path == mk2.mock_path and mk1.func_name == mk2.func_name:
                 mk2.call_count += 1
                 if mk1.callFunc and mk2.callFunc:
-                    mk2.callFunc.call_calls.extend(mk1.callFunc.call_calls)
+                    mk2.callFunc.call_calls.extend(
+                        [k for k in mk1.callFunc.call_calls if (
+                            k.func_name not in [j.func_name for j in mk2.callFunc.call_calls])])
+                    #    [k for k in  if mk2.callFunc.func_name != k.func_name])
                 same = True
                 break
         if not same:
@@ -303,7 +336,7 @@ def calls_with(t_func: ast.FunctionDef, calls: List[CallFunc]):
                         call.is_with = True
 
 
-def analyze_call_for_call(calls: List[CallFunc]):
+def analyze_call_for_call(calls: List[CallFunc], t_func: ast.FunctionDef):
     """
     analyze call returns call
     """
@@ -315,7 +348,14 @@ def analyze_call_for_call(calls: List[CallFunc]):
                     and call1.ats.func.value is call2.ats):
                 flg = True
                 # c02().c01()
-                call2.call_calls.append(call1)
+                if call1.func_name not in [k.func_name for k in call2.call_calls]:
+                    call2.call_calls.append(call1)
+            # ccc = c02(); ccc.c01()
+            par = _get_parent(call2.ats, t_func)
+            if par is not None and call1.ats and _is_same_origin(par, call1.ats.func, t_func):
+                flg = True
+                if call1.func_name not in [k.func_name for k in call2.call_calls]:
+                    call2.call_calls.append(call1)
         if not flg:
             rets.append(call1)
     return rets
@@ -334,7 +374,7 @@ def make_func_obj(
     関数解析
     """
     calls = get_calls(t_func)
-    calls = analyze_call_for_call(calls)
+    calls = analyze_call_for_call(calls, t_func)
     calls_with(t_func, calls)
     pfo = ParseFunc(
         t_func.name, t_func,

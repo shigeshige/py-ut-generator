@@ -18,7 +18,7 @@ def test_aaa():
     t_funcs = ast_util.get_function(module)
     fpo = ast_util.make_func_obj(t_funcs[0], pkg, mdn, module)
 
-    assert fpo.calls[3].call_calls
+    assert fpo.calls[1].call_calls
 
 
 def test_output():

@@ -5,7 +5,7 @@ test
 
 def aaa():
     b = bbb()
-    b.ddd()
+    b.eee()
 
     bbb().ddd()
     c = b
@@ -23,4 +23,7 @@ def ccc():
 class C1:
 
     def ddd(self):
+        return 1
+
+    def eee(self):
         return 1
