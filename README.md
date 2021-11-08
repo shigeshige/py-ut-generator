@@ -3,7 +3,7 @@ This tools generate automatically Python pytest Unit test code.
 This project uses ast module to generate.  
 Easy to make coverage test. And Easy to customize test code.
 
-### feature
+### Feature
 
 * Generate unit test python file in tests package.
 * Generate pytest test function from each function.
