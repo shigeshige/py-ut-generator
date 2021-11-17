@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pyutgenerator"
-version = "0.7.2"
+version = "0.8.0"
 description = "python ut test code generator."
 authors = ["shigeshige <5540474+shigeshige@users.noreply.github.com>"]
 license = "MIT"
