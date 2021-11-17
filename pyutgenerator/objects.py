@@ -42,7 +42,8 @@ class MockFunc:
     has_return: bool = False
     func_name: Optional[str] = None
     call_count: int = 1
-    callFunc: Optional[CallFunc] = None
+    call_func: Optional[CallFunc] = None
+    open_flg: bool = False
 
 
 @dataclass
@@ -67,3 +68,6 @@ class ParseFunc:
         """
         return [(x.arg_name + '[0]')
                 if x.values else x.arg_name for x in self.args]
+
+    def is_mock_open(self) -> bool:
+        return bool([elm for elm in self.mocks if elm.open_flg])

@@ -1,6 +1,7 @@
 
 import pytest
 from unittest.mock import patch
+from unittest.mock import mock_open
 from unittest.mock import MagicMock
 
 from tests.pyutgenerator.data import pattern04
@@ -22,9 +23,10 @@ def test_bbb():
     # plan
 
     # do
+    with\
+            patch('tests.pyutgenerator.data.pattern04.open', mock_open(read_data='')) as m1:
 
+        ret = pattern04.bbb()
 
-    ret = pattern04.bbb()
-
-    # check
-    assert ret
+        # check
+        assert ret

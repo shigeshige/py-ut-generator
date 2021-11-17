@@ -18,6 +18,16 @@ from unittest.mock import MagicMock
 {}
 """
 
+TEMP_IMPORT_OPEN = """
+import pytest
+from unittest.mock import patch
+from unittest.mock import mock_open
+from unittest.mock import MagicMock
+
+{}
+"""
+
+
 TEMP_FUNC = """
 def {}():
     # plan
@@ -50,6 +60,7 @@ STR_RUNS_PRE = '''    target = {}.{}()
 
 STR_WITH = '    with\\'
 STR_MOCK = "            patch('{}') as {}"
+STR_MOCK_OPEN = "            patch('{}', mock_open(read_data='')) as {}"
 STR_MOCK_RETURN0 = '        {}.return_value'
 STR_MOCK_RETURN = '        {}.return_value = {}'
 STR_MOCK_RETURN_MOCK = '        {}.return_value = MagicMock()'
@@ -64,15 +75,17 @@ STR_ASSERT_TAB = '        assert {}'
 STR_TAB = '    '
 
 
-def parse_import(pkg, mdn):
+def parse_import(pkg, mdn, mock_open_flg=False):
     """
     parse import
     """
     owenr = f'from {pkg} import {mdn}'
     if not pkg:
         owenr = f'import {mdn}'
+    if not mock_open_flg:
+        return TEMP_IMPORT.format(owenr)
 
-    return TEMP_IMPORT.format(owenr)
+    return TEMP_IMPORT_OPEN.format(owenr)
 
 
 def parse_func(fpo: ParseFunc):
@@ -133,14 +146,14 @@ def parse_varis(name, value):
     return STR_VARIS.format(name, value)
 
 
-def _parse_mock_call(callFunc: CallFunc, txt: str):
+def _parse_mock_call(call_func: CallFunc, txt: str):
     """
     mock for mock
     """
 
     txts = []
-    if callFunc:
-        for call in callFunc.call_calls:
+    if call_func:
+        for call in call_func.call_calls:
             ccall = cast(CallFunc, call)
             ttt = STR_MOCK_FUNC2.format(txt, ccall.func_name)
             txts.append(ttt)
@@ -157,15 +170,17 @@ def parse_mocks_return(mocks: List[MockFunc]):
     txt = []
     for i, moc in enumerate(mocks):
         ttt = ''
-        if moc.callFunc and moc.callFunc.is_with:
+        if moc.open_flg:
+            continue
+        if moc.call_func and moc.call_func.is_with:
             ttt = STR_MOCK_RETURN_MOCK.format('m' + str(i + 1))
             txt.append(ttt)
             ttt = STR_MOCK_RETURN_MOCK2.format('m' + str(i + 1), '__enter__')
             txt.append(ttt)
-        elif moc.callFunc and moc.callFunc.call_calls:
+        elif moc.call_func and moc.call_func.call_calls:
             ttt = STR_MOCK_RETURN_MOCK.format('m' + str(i + 1))
             txt.append(ttt)
-            txt.extend(_parse_mock_call(moc.callFunc, STR_MOCK_RETURN0.format('m' + str(i + 1))))
+            txt.extend(_parse_mock_call(moc.call_func, STR_MOCK_RETURN0.format('m' + str(i + 1))))
         elif moc.has_return:
             if moc.call_count > 1:
                 ttt = STR_MOCK_RETURN_MUL.format('m' + str(i + 1), ', '.join(['None'] * moc.call_count))
@@ -189,7 +204,10 @@ def parse_mocks(mocks: List[MockFunc]):
         return ''
     txt.append(STR_WITH)
     for i, moc in enumerate(mocks):
-        txt.append(STR_MOCK.format(moc.mock_path, 'm' + str(i + 1)))
+        if moc.open_flg:
+            txt.append(STR_MOCK_OPEN.format(moc.mock_path, 'm' + str(i + 1)))
+        else:
+            txt.append(STR_MOCK.format(moc.mock_path, 'm' + str(i + 1)))
         if len(mocks) - 1 == i:
             txt[-1] += ':'
         else:
@@ -203,5 +221,4 @@ def parse_assert(asserts, tab=False):
     """
     if tab:
         return STR_RC.join([STR_ASSERT_TAB.format(asst) for asst in asserts])
-    else:
-        return STR_RC.join([STR_ASSERT.format(asst) for asst in asserts])
+    return STR_RC.join([STR_ASSERT.format(asst) for asst in asserts])
