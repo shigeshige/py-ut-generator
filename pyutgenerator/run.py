@@ -36,25 +36,33 @@ def make_test_code(module, pkg, mdn, renew):
     t_file = files.get_test_file_name(pkg, mdn)
     old_test = ast_util.create_ast(t_file)
 
+    ttt = ''
+    mock_open_flg = False
+
     if renew:
-        ttt = templates.parse_import(pkg, mdn)
         old_test = None
-    else:
-        ttt = ''
-        if not old_test:
-            ttt = templates.parse_import(pkg, mdn)
 
     for t_func in t_funcs:
         if ast_util.has_test_function(old_test, t_func):
             continue
         fpo = ast_util.make_func_obj(t_func, pkg, mdn, module)
         ttt += templates.parse_func(fpo)
+        if fpo.is_mock_open():
+            mock_open_flg = True
 
     for t_func, clazz in t_funcs_cls:
         if ast_util.has_test_function(old_test, t_func):
             continue
         fpo = ast_util.make_func_obj(t_func, pkg, mdn, module, clazz)
         ttt += templates.parse_func(fpo)
+        if fpo.is_mock_open():
+            mock_open_flg = True
+
+    if renew:
+        ttt = templates.parse_import(pkg, mdn, mock_open_flg) + ttt
+    else:
+        if not old_test:
+            ttt = templates.parse_import(pkg, mdn, mock_open_flg) + ttt
     return ttt
 
 

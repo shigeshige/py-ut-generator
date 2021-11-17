@@ -29,6 +29,7 @@ The User Guide
 
    install
    use
+   mock_open
 
 
 

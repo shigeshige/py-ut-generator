@@ -249,9 +249,8 @@ def _create_mock_func(stm, clf: CallFunc, pkg, mdn) -> Optional[MockFunc]:
                 '.' +
                 clf.func_name,
                 clf.has_return)
-        else:
-            return MockFunc(
-                pkg + '.' + mdn + '.' + clf.func_name, clf.has_return)
+        return MockFunc(
+            pkg + '.' + mdn + '.' + clf.func_name, clf.has_return)
     return None
 
 
@@ -261,40 +260,47 @@ def get_mocks(calls: List[CallFunc], module, pkg, mdn):
     """
     mocks: List[MockFunc] = []
     for clf in calls:
-        import_flg = False
+        ope_flg = False
         for stm in ast.walk(module):
             if isinstance(stm, ast.Import):
                 names = get_import_names(stm)
                 if names == clf.func_name and not clf.module:
                     # import xxx
-                    import_flg = True
+                    ope_flg = True
                 elif names == clf.module:
                     # import xxx -> xxx.yyy.clf()
                     if clf.module2:
                         mck = MockFunc(
                             pkg + '.' + mdn + '.' +
                             clf.module + '.' + clf.module2, clf.has_return, clf.func_name)
-                        mck.callFunc = clf
+                        mck.call_func = clf
                         mocks.append(mck)
                     else:
                         # import xxx -> xxx.clf()
                         mck = MockFunc(
                             clf.module + '.' +
                             clf.func_name, clf.has_return)
-                        mck.callFunc = clf
+                        mck.call_func = clf
                         mocks.append(mck)
-                    import_flg = True
+                    ope_flg = True
             if isinstance(stm, ast.ImportFrom):
                 mck = _create_mock_func(stm, clf, pkg, mdn)
                 if mck is not None:
                     mocks.append(mck)
-        if import_flg:
+        if ope_flg:
             continue
         for stm in get_function(module):
             # def xxx():
             if not clf.module and clf.func_name == stm.name:
                 mck = MockFunc(pkg + '.' + mdn + '.' + clf.func_name, clf.has_return)
-                mck.callFunc = clf
+                mck.call_func = clf
+                mocks.append(mck)
+                ope_flg = True
+        if not ope_flg and clf.func_name in const.BUILDINS:
+            if const.FUNC_OPEN == clf.func_name:
+                mck = MockFunc(pkg + '.' + mdn + '.' + clf.func_name, clf.has_return)
+                mck.call_func = clf
+                mck.open_flg = True
                 mocks.append(mck)
 
     return mocks
@@ -310,10 +316,10 @@ def merge_mocks(mocks: List[MockFunc]):
         for mk2 in ret:
             if mk1.mock_path == mk2.mock_path and mk1.func_name == mk2.func_name:
                 mk2.call_count += 1
-                if mk1.callFunc and mk2.callFunc:
-                    mk2.callFunc.call_calls.extend(
-                        [k for k in mk1.callFunc.call_calls if (
-                            k.func_name not in [j.func_name for j in mk2.callFunc.call_calls])])
+                if mk1.call_func and mk2.call_func:
+                    mk2.call_func.call_calls.extend(
+                        [k for k in mk1.call_func.call_calls if (
+                            k.func_name not in [j.func_name for j in mk2.call_func.call_calls])])
                     #    [k for k in  if mk2.callFunc.func_name != k.func_name])
                 same = True
                 break

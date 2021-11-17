@@ -26,3 +26,7 @@ AST_NAME = 'Name'
 AST_OPE = 'UnaryOp'
 
 STR_PRE_FUNC = 'test_'
+
+FUNC_OPEN = 'open'
+
+BUILDINS = [FUNC_OPEN]
