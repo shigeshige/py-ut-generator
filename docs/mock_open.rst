@@ -4,20 +4,25 @@ Mock Open File
 
 Mock Open Code
 -------------------
+
+It's difficult to mock the open function directly.
+Please use unittest.mock.mock_open
+It is easy to use and customize.
+
 ::
 
-import os
+    import os
 
 
-def read_file(file_name):
-    """
-    read utf8 txt file.
-    """
-    if not os.path.exists(file_name):
-        return None
+    def read_file(file_name):
+        """
+        read utf8 txt file.
+        """
+        if not os.path.exists(file_name):
+            return None
 
-    with open(file_name, 'r', encoding='utf-8') as f:
-        return f.read()
+        with open(file_name, 'r', encoding='utf-8') as f:
+            return f.read()
 
 
 
@@ -50,6 +55,8 @@ Output Test Code
 
 Customize Test Code
 --------------------
+::
+
     import pytest
     from unittest.mock import patch
     from unittest.mock import mock_open
