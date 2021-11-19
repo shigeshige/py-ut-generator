@@ -9,6 +9,19 @@ It's difficult to mock the open function directly.
 Please use unittest.mock.mock_open
 It is easy to use and customize.
 
+ unittest.mock.mock_open(mock=None, read_data=None)
+
+    A helper function to create a mock to replace the use of open(). It works for open() called directly or used as a context manager.
+
+    The mock argument is the mock object to configure. If None (the default) then a MagicMock will be created for you, with the API limited to methods or attributes available on standard file handles.
+
+    read_data is a string for the read(), readline(), and readlines() methods of the file handle to return. Calls to those methods will take data from read_data until it is depleted. The mock of these methods is pretty simplistic: every time the mock is called, the read_data is rewound to the start. If you need more control over the data that you are feeding to the tested code you will need to customize this mock for yourself. When that is insufficient, one of the in-memory filesystem packages on PyPI can offer a realistic filesystem for testing.
+
+    Changed in version 3.4: Added readline() and readlines() support. The mock of read() changed to consume read_data rather than returning it on each call.
+
+    Changed in version 3.5: read_data is now reset on each call to the mock.
+
+
 ::
 
     import os
