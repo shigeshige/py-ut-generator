@@ -46,3 +46,16 @@ Sample Out Put Test Code
 
             # check
             assert ret
+
+
+Parameter
+----------
+
+--overwrite
+
+
+
+::
+
+    pytugen --overwrite aaaaa/aaaaa.py
+
