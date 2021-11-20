@@ -5,7 +5,15 @@ copyrigth https://github.com/shigeshige/py-ut-generator
 """
 import ast
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
+
+
+@dataclass
+class Value:
+    value: Any
+    is_literal: bool = False
+    description: str = ''
+    imports: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -29,8 +37,10 @@ class FuncArg:
     Function arguments.
     """
     arg_name: str
-    values: List = field(default_factory=list)
     ats: Optional[ast.AST] = None
+    values: List = field(default_factory=list)
+    arg_type: str = ''
+    dict_value: Dict = field(default_factory=dict)
 
 
 @dataclass

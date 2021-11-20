@@ -78,15 +78,56 @@ def has_return_val(func):
     return False
 
 
+def create_func_arg(func, arg: ast.arg) -> FuncArg:
+    """
+    analyze function arguments.
+    """
+    values = get_variable_values(func, arg.arg)
+    fuc = FuncArg(arg.arg, arg, values)
+    if arg.annotation and isinstance(arg.annotation, ast.Name):
+        fuc.arg_type = arg.annotation.id
+    dic_value = get_dicts_values(func, arg.arg)
+    if dic_value:
+        fuc.arg_type = 'dict'
+        fuc.dict_value = dic_value
+
+    return fuc
+
+
 def get_func_arg(func, is_class: bool) -> List[FuncArg]:
     """
     関数の引数取得
     """
-    prms = [FuncArg(a.arg, get_variable_values(func, a.arg))
-            for a in func.args.args]
+    prms = [create_func_arg(func, a) for a in func.args.args]
     if is_class:
         return prms[1:]
     return prms
+
+
+def get_dicts_values(func, name):
+    ret = {}
+    for stm in ast.walk(func):
+        if isinstance(stm, ast.If) and isinstance(stm.test, ast.Compare):
+            if isinstance(stm.test.left, ast.Subscript) and isinstance(
+                    stm.test.left.value, ast.Name) and stm.test.left.value.id == name:
+                # if aaa['key'] == 'Vale':
+                if isinstance(stm.test.left.slice, ast.Constant):
+                    if isinstance(stm.test.comparators[0], ast.Constant):
+                        ret[stm.test.left.slice.value] = stm.test.comparators[0].value
+                    else:
+                        ret[stm.test.left.slice.value] = None
+        if (isinstance(stm, ast.Call) and isinstance(stm.func, ast.Attribute)
+                and isinstance(stm.func.value, ast.Name) and stm.func.value.id == name):
+            if isinstance(stm.args[0], ast.Constant) and stm.args[0].value not in ret:
+                # aaa.get('Key')
+                ret[stm.args[0].value] = None
+        if (isinstance(stm, ast.Subscript) and isinstance(stm.value, ast.Name)
+                and stm.value.id == name):
+            if (isinstance(stm.slice, ast.Constant) and stm.slice.value not in ret):
+                # aaa['key']
+                ret[stm.slice.value] = None
+
+    return ret
 
 
 def get_variable_values(func, name):
@@ -208,7 +249,7 @@ def _has_return_call(call_obj, func):
                 if stm2 is call_obj:
                     return True
         # if aaa():
-        if isinstance(stm, ast.If) or isinstance(stm, ast.While):
+        if isinstance(stm, (ast.If, ast.While)):
             for stm2 in ast.walk(stm.test):
                 if stm2 is call_obj:
                     return True

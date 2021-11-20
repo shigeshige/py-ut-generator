@@ -6,7 +6,7 @@ copyrigth https://github.com/shigeshige/py-ut-generator
 
 from typing import List, cast
 
-from pyutgenerator.objects import MockFunc, ParseFunc, CallFunc
+from pyutgenerator.objects import FuncArg, MockFunc, ParseFunc, CallFunc
 
 STR_PRE_FUNC = 'test_'
 
@@ -98,8 +98,7 @@ def parse_func(fpo: ParseFunc):
 
     if fpo.has_return:
         checks = parse_assert(['ret'], fpo.mocks)
-    inits = '\n'.join([parse_varis(arg.arg_name, 'None' if not arg.values else (
-        '[' + ', '.join(map(str, arg.values)) + ']')) for arg in fpo.args])
+    inits = '\n'.join([parse_varis(arg) for arg in fpo.args])
 
     if fpo.mocks:
         run_txt = STR_TAB
@@ -139,11 +138,18 @@ def parse_func(fpo: ParseFunc):
     return TEMP_FUNC.format(STR_PRE_FUNC + fpo.name, inits, mck, mck_ret, runs) + txt_cheks
 
 
-def parse_varis(name, value):
+def parse_varis(func_arg: FuncArg):
     """
     parse variers
     """
-    return STR_VARIS.format(name, value)
+    value = 'None'
+    if func_arg.values:
+        value = '[' + ', '.join(map(str, func_arg.values)) + ']'
+    if func_arg.dict_value.keys():
+        value = str(func_arg.dict_value)
+    elif func_arg.arg_type == 'dict':
+        value = '{}'
+    return STR_VARIS.format(func_arg.arg_name, value)
 
 
 def _parse_mock_call(call_func: CallFunc, txt: str):
