@@ -17,3 +17,15 @@ def test_aaaaa():
 
         # check
         assert ret
+
+def test_bbbb():
+    # plan
+    name = None
+    # do
+    with\
+            patch('tests.pyutgenerator.data.pattern01.isdir') as m1:
+        m1.return_value = None
+        ret = pattern01.bbbb(name)
+
+        # check
+        assert ret

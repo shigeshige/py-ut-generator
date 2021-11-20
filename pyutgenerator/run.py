@@ -77,7 +77,6 @@ def main():
     print('input:' + args.filename)
     # print(args.ovewrite)
     parse_file(args.filename, args.overwrite)
-    return
 
 
 if __name__ == "__main__":
