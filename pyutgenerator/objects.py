@@ -70,4 +70,7 @@ class ParseFunc:
                 if x.values else x.arg_name for x in self.args]
 
     def is_mock_open(self) -> bool:
+        """
+        is mock_open ?
+        """
         return bool([elm for elm in self.mocks if elm.open_flg])
