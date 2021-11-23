@@ -15,6 +15,11 @@ class Value:
     description: str = ''
     imports: List[str] = field(default_factory=list)
 
+    def __str__(self) -> str:
+        if isinstance(self.value, str):
+            return "'" + self.value + "'"
+        return str(self.value) if self.is_literal else self.description
+
 
 @dataclass
 class CallFunc:
@@ -84,3 +89,11 @@ class ParseFunc:
         is mock_open ?
         """
         return bool([elm for elm in self.mocks if elm.open_flg])
+
+    def get_name(self):
+        """
+        get output name.
+        """
+        if self.class_func:
+            return self.class_name + '.' + self.name
+        return self.name

@@ -18,7 +18,7 @@ def test_get_variable_values():
     t_func = ast_util.get_function(module)[0]
 
     ret = ast_util.get_variable_values(t_func, 'bbb')
-    assert ret == [-1, 0, 1]
+    assert [i.value for i in ret] == [-1, 0, 1]
 
 
 def test_output():
