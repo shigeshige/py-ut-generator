@@ -88,11 +88,41 @@ def parse_import(pkg, mdn, mock_open_flg=False):
     return TEMP_IMPORT_OPEN.format(owenr)
 
 
+def parse_func_return(fpo: ParseFunc, run_txt):
+    """
+    parse return
+    """
+    runs = ''
+    formatter = ''
+    if fpo.class_name:
+        # call for Class
+        if fpo.class_func:
+            if fpo.has_return:
+                formatter = STR_RUNS_RETURN
+            else:
+                formatter = STR_RUNS
+        else:
+            runs = STR_RUNS_PRE.format(fpo.module_name, fpo.class_name)
+            if fpo.has_return:
+                runs += run_txt + STR_RUNS_RETURN.format('target',
+                                                         fpo.get_name(), ', '.join(fpo.get_arg_str()))
+            else:
+                runs += run_txt + STR_RUNS.format('target', fpo.get_name(), ', '.join(fpo.get_arg_str()))
+            return runs
+    else:
+        if fpo.has_return:
+            formatter = STR_RUNS_RETURN
+        else:
+            # no return
+            formatter = STR_RUNS
+
+    return run_txt + formatter.format(fpo.module_name, fpo.get_name(), ', '.join(fpo.get_arg_str()))
+
+
 def parse_func(fpo: ParseFunc):
     """
     parse one function.
     """
-    mdn = fpo.module_name
     run_txt = ''
     checks = ''
 
@@ -102,32 +132,8 @@ def parse_func(fpo: ParseFunc):
 
     if fpo.mocks:
         run_txt = STR_TAB
-    if fpo.class_name:
-        # call for Class
-        if fpo.class_func:
-            if fpo.has_return:
-                runs = run_txt + \
-                    STR_RUNS_RETURN.format(
-                        mdn, fpo.class_name + '.' + fpo.name, ', '.join(fpo.get_arg_str()))
-            else:
-                runs = run_txt + STR_RUNS.format(mdn,
-                                                 fpo.class_name + '.' + fpo.name,
-                                                 ', '.join(fpo.get_arg_str()))
-        else:
-            runs = run_txt + STR_RUNS_PRE.format(mdn, fpo.class_name)
-            if fpo.has_return:
-                runs += run_txt + \
-                    STR_RUNS_RETURN.format('target', fpo.name, ', '.join(fpo.get_arg_str()))
-            else:
-                runs += run_txt + \
-                    STR_RUNS.format('target', fpo.name, ', '.join(fpo.get_arg_str()))
-    else:
-        if fpo.has_return:
-            runs = run_txt + \
-                STR_RUNS_RETURN.format(mdn, fpo.name, ', '.join(fpo.get_arg_str()))
-        else:
-            runs = run_txt + \
-                STR_RUNS.format(mdn, fpo.name, ', '.join(fpo.get_arg_str()))
+
+    runs = parse_func_return(fpo, run_txt)
     mck = parse_mocks(fpo.mocks)
     mck_ret = parse_mocks_return(fpo.mocks)
     if fpo.mocks:

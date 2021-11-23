@@ -8,7 +8,7 @@ import ast
 from typing import List, Optional, cast
 
 from pyutgenerator import const, files
-from pyutgenerator.objects import CallFunc, FuncArg, MockFunc, ParseFunc
+from pyutgenerator.objects import CallFunc, FuncArg, MockFunc, ParseFunc, Value
 
 
 def create_ast(file_name):
@@ -104,33 +104,63 @@ def get_func_arg(func, is_class: bool) -> List[FuncArg]:
     return prms
 
 
+def _get_value(func, stm: ast.expr) -> Optional[Value]:
+    """
+    get constant, literal value.
+    """
+
+    if isinstance(stm, ast.Constant):
+        # 1
+        return Value(stm.value, True)
+    if isinstance(stm, ast.UnaryOp) and isinstance(stm.operand, ast.Constant):
+        # -1
+        return Value(-stm.operand.value, True)
+    # For python 3.7
+    if isinstance(stm, ast.Num):
+        return Value(stm.n, True)
+    if isinstance(stm, ast.Str):
+        return Value(stm.s, True)
+    if isinstance(stm, ast.UnaryOp) and isinstance(stm.operand, ast.Num):
+        # -1
+        return Value(-stm.operand.n, True)
+    if isinstance(stm, ast.Index) and isinstance(stm.value, ast.Str):
+        # aaa['K1']
+        return Value(stm.value.s, True)
+    return None
+
+
 def get_dicts_values(func, name):
+    """
+    get dict key and value.
+    """
     ret = {}
     for stm in ast.walk(func):
         if isinstance(stm, ast.If) and isinstance(stm.test, ast.Compare):
             if isinstance(stm.test.left, ast.Subscript) and isinstance(
                     stm.test.left.value, ast.Name) and stm.test.left.value.id == name:
                 # if aaa['key'] == 'Vale':
-                if isinstance(stm.test.left.slice, ast.Constant):
-                    if isinstance(stm.test.comparators[0], ast.Constant):
-                        ret[stm.test.left.slice.value] = stm.test.comparators[0].value
-                    else:
-                        ret[stm.test.left.slice.value] = None
+                val = _get_value(func, stm.test.left.slice)
+                if val and val.is_literal:
+                    val2 = _get_value(func, stm.test.comparators[0])
+                    if val2:
+                        ret[val.value] = val2.value
         if (isinstance(stm, ast.Call) and isinstance(stm.func, ast.Attribute)
                 and isinstance(stm.func.value, ast.Name) and stm.func.value.id == name):
-            if isinstance(stm.args[0], ast.Constant) and stm.args[0].value not in ret:
+            val = _get_value(func, stm.args[0])
+            if val and val.value not in ret:
                 # aaa.get('Key')
-                ret[stm.args[0].value] = None
+                ret[val.value] = None
         if (isinstance(stm, ast.Subscript) and isinstance(stm.value, ast.Name)
                 and stm.value.id == name):
-            if (isinstance(stm.slice, ast.Constant) and stm.slice.value not in ret):
+            val = _get_value(func, stm.slice)
+            if (val and val.value not in ret):
                 # aaa['key']
-                ret[stm.slice.value] = None
+                ret[val.value] = None
 
     return ret
 
 
-def get_variable_values(func, name):
+def get_variable_values(func, name) -> List[Value]:
     """
     Get variable values in function.
     """
@@ -138,22 +168,17 @@ def get_variable_values(func, name):
     ret = []
     for stm in ast.walk(func):
         if isinstance(stm, ast.Compare):
-            if (isinstance(stm.left, ast.Name)
-                    and stm.left.id == name
-                    and stm.comparators):
-                if isinstance(stm.comparators[0], ast.Constant):
-                    # aaa > 0
-                    ret.append(stm.comparators[0].value)
-                if (isinstance(stm.comparators[0], ast.UnaryOp)
-                        and isinstance(stm.comparators[0].operand, ast.Constant)):
-                    # aaa > -1
-                    ret.append(-stm.comparators[0].operand.value)
-            if (stm.comparators
-                    and isinstance(stm.comparators[0], ast.Name)
-                    and stm.comparators[0].id == name
-                    and isinstance(stm.left, ast.Constant)):
+            if (isinstance(stm.left, ast.Name) and stm.left.id == name and stm.comparators):
+                # aaa > 0
+                val = _get_value(func, stm.comparators[0])
+                if val:
+                    ret.append(val)
+            if (stm.comparators and isinstance(
+                    stm.comparators[0], ast.Name) and stm.comparators[0].id == name):
                 # 1 > aaa
-                ret.append(stm.left.value)
+                val = _get_value(func, stm.left)
+                if val:
+                    ret.append(val)
 
     return ret
 
@@ -325,9 +350,9 @@ def get_mocks(calls: List[CallFunc], module, pkg, mdn):
                         mocks.append(mck)
                     ope_flg = True
             if isinstance(stm, ast.ImportFrom):
-                mck = _create_mock_func(stm, clf, pkg, mdn)
-                if mck is not None:
-                    mocks.append(mck)
+                mck2 = _create_mock_func(stm, clf, pkg, mdn)
+                if mck2 is not None:
+                    mocks.append(mck2)
         if ope_flg:
             continue
         for stm in get_function(module):
