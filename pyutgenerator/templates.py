@@ -87,9 +87,9 @@ def parse_import(pkg, mdn, mock_open_flg=False, add_imports=None):
     if not pkg:
         owenr = f'import {mdn}'
     if not mock_open_flg:
-        return TEMP_IMPORT.format('\n'.join(add_imports), owenr)
+        return TEMP_IMPORT.format('\n'.join(sorted(add_imports)), owenr)
 
-    return TEMP_IMPORT_OPEN.format('\n'.join(add_imports), owenr)
+    return TEMP_IMPORT_OPEN.format('\n'.join(sorted(add_imports)), owenr)
 
 
 def parse_func_return(fpo: ParseFunc, run_txt):

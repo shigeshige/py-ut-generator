@@ -3,6 +3,8 @@ import pytest
 from unittest.mock import patch
 from unittest.mock import MagicMock
 
+
+
 from tests.pyutgenerator.data import pattern02
 
 def test_p01():
