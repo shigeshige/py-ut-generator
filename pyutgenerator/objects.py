@@ -13,7 +13,7 @@ class Value:
     value: Any
     is_literal: bool = False
     description: str = ''
-    imports: List[str] = field(default_factory=list)
+    imports: str = ''
 
     def __str__(self) -> str:
         if isinstance(self.value, str):
@@ -43,7 +43,7 @@ class FuncArg:
     """
     arg_name: str
     ats: Optional[ast.AST] = None
-    values: List = field(default_factory=list)
+    values: List[Value] = field(default_factory=list)
     arg_type: str = ''
     dict_value: Dict = field(default_factory=dict)
 
@@ -76,6 +76,7 @@ class ParseFunc:
     class_name: str = ''
     mocks: List[MockFunc] = field(default_factory=list)
     class_func: bool = False
+    imports: List[str] = field(default_factory=list)
 
     def get_arg_str(self):
         """

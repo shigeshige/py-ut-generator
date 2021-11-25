@@ -14,6 +14,8 @@ TEMP_IMPORT = """
 import pytest
 from unittest.mock import patch
 from unittest.mock import MagicMock
+{}
+
 
 {}
 """
@@ -23,6 +25,8 @@ import pytest
 from unittest.mock import patch
 from unittest.mock import mock_open
 from unittest.mock import MagicMock
+{}
+
 
 {}
 """
@@ -75,7 +79,7 @@ STR_ASSERT_TAB = '        assert {}'
 STR_TAB = '    '
 
 
-def parse_import(pkg, mdn, mock_open_flg=False):
+def parse_import(pkg, mdn, mock_open_flg=False, add_imports=None):
     """
     parse import
     """
@@ -83,9 +87,9 @@ def parse_import(pkg, mdn, mock_open_flg=False):
     if not pkg:
         owenr = f'import {mdn}'
     if not mock_open_flg:
-        return TEMP_IMPORT.format(owenr)
+        return TEMP_IMPORT.format('\n'.join(add_imports), owenr)
 
-    return TEMP_IMPORT_OPEN.format(owenr)
+    return TEMP_IMPORT_OPEN.format('\n'.join(add_imports), owenr)
 
 
 def parse_func_return(fpo: ParseFunc, run_txt):
