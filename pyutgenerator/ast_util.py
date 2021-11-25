@@ -78,15 +78,15 @@ def has_return_val(func):
     return False
 
 
-def create_func_arg(func, arg: ast.arg) -> FuncArg:
+def create_func_arg(func, arg: ast.arg, module: ast.Module) -> FuncArg:
     """
     analyze function arguments.
     """
-    values = get_variable_values(func, arg.arg)
+    values = get_variable_values(func, arg.arg, module)
     fuc = FuncArg(arg.arg, arg, values)
     if arg.annotation and isinstance(arg.annotation, ast.Name):
         fuc.arg_type = arg.annotation.id
-    dic_value = get_dicts_values(func, arg.arg)
+    dic_value = get_dicts_values(func, arg.arg, module)
     if dic_value:
         fuc.arg_type = 'dict'
         fuc.dict_value = dic_value
@@ -94,17 +94,18 @@ def create_func_arg(func, arg: ast.arg) -> FuncArg:
     return fuc
 
 
-def get_func_arg(func, is_class: bool) -> List[FuncArg]:
+def get_func_arg(func, is_class: bool, module: ast.Module) -> List[FuncArg]:
     """
     関数の引数取得
     """
-    prms = [create_func_arg(func, a) for a in func.args.args]
+    prms = [create_func_arg(func, a, module) for a in func.args.args]
     if is_class:
         return prms[1:]
     return prms
 
 
-def _get_value(func, stm: ast.expr) -> Optional[Value]:
+def _get_value(func, stm: ast.expr, is_const_only: bool = False,
+               module: Optional[ast.Module] = None) -> Optional[Value]:
     """
     get constant, literal value.
     """
@@ -115,6 +116,36 @@ def _get_value(func, stm: ast.expr) -> Optional[Value]:
     if isinstance(stm, ast.UnaryOp) and isinstance(stm.operand, ast.Constant):
         # -1
         return Value(-stm.operand.value, True)
+    # variable Value
+    if not is_const_only:
+        name = None
+        if isinstance(stm, ast.Name):
+            name = stm.id
+        if isinstance(stm, ast.Attribute) and isinstance(stm.value, ast.Name):
+            name = stm.value.id
+        if name:
+            # get from local variable
+            for stm2 in ast.walk(func):
+                if isinstance(stm2, ast.Assign) and isinstance(
+                        stm2.targets[0], ast.Name) and stm2.targets[0].id == name and stm is not stm2:
+                    val = _get_value(func, stm2.value, is_const_only, module)
+                    if val:
+                        return val
+            # get from external variable
+            if module:
+                for stm2 in ast.walk(module):
+                    # from in file.
+                    if isinstance(stm2, ast.Assign) and isinstance(
+                            stm2.targets[0], ast.Name) and stm2.targets[0].id == name and stm is not stm2:
+                        val = _get_value(func, stm2.value, is_const_only, module)
+                        if val:
+                            return val
+                impt = _get_import(name, module)
+                if impt:
+                    if isinstance(stm, ast.Attribute) and isinstance(stm.value, ast.Name):
+                        return Value(None, False, name + '.' + stm.attr, impt)
+                    return Value(None, False, name, impt)
+
     # For python 3.7
     if isinstance(stm, ast.Num):
         return Value(stm.n, True)
@@ -129,7 +160,7 @@ def _get_value(func, stm: ast.expr) -> Optional[Value]:
     return None
 
 
-def get_dicts_values(func, name):
+def get_dicts_values(func, name, module):
     """
     get dict key and value.
     """
@@ -139,20 +170,20 @@ def get_dicts_values(func, name):
             if isinstance(stm.test.left, ast.Subscript) and isinstance(
                     stm.test.left.value, ast.Name) and stm.test.left.value.id == name:
                 # if aaa['key'] == 'Vale':
-                val = _get_value(func, stm.test.left.slice)
+                val = _get_value(func, stm.test.left.slice, False, module)
                 if val and val.is_literal:
-                    val2 = _get_value(func, stm.test.comparators[0])
+                    val2 = _get_value(func, stm.test.comparators[0], False, module)
                     if val2:
                         ret[val.value] = val2.value
         if (isinstance(stm, ast.Call) and isinstance(stm.func, ast.Attribute)
                 and isinstance(stm.func.value, ast.Name) and stm.func.value.id == name):
-            val = _get_value(func, stm.args[0])
+            val = _get_value(func, stm.args[0], False, module)
             if val and val.value not in ret:
                 # aaa.get('Key')
                 ret[val.value] = None
         if (isinstance(stm, ast.Subscript) and isinstance(stm.value, ast.Name)
                 and stm.value.id == name):
-            val = _get_value(func, stm.slice)
+            val = _get_value(func, stm.slice, False, module)
             if (val and val.value not in ret):
                 # aaa['key']
                 ret[val.value] = None
@@ -160,7 +191,7 @@ def get_dicts_values(func, name):
     return ret
 
 
-def get_variable_values(func, name) -> List[Value]:
+def get_variable_values(func, name, module) -> List[Value]:
     """
     Get variable values in function.
     """
@@ -170,7 +201,7 @@ def get_variable_values(func, name) -> List[Value]:
         if isinstance(stm, ast.Compare):
             if (isinstance(stm.left, ast.Name) and stm.left.id == name and stm.comparators):
                 # aaa > 0
-                val = _get_value(func, stm.comparators[0])
+                val = _get_value(func, stm.comparators[0], False, module)
                 if val:
                     ret.append(val)
             if (stm.comparators and isinstance(
@@ -290,6 +321,21 @@ def _has_return_call(call_obj, func):
                     return True
 
     return False
+
+
+def _get_import(name, module: ast.Module):
+    """
+    get from import by name
+    """
+    for stm in ast.walk(module):
+        if isinstance(stm, ast.ImportFrom):
+            for iname in stm.names:
+                if isinstance(iname, ast.alias):
+                    if iname.name == name:
+                        return 'from ' + str(stm.module) + ' import ' + name
+        if isinstance(stm, ast.Import):
+            pass
+    return None
 
 
 def _create_mock_func(stm, clf: CallFunc, pkg, mdn) -> Optional[MockFunc]:
@@ -452,7 +498,7 @@ def make_func_obj(
         t_func.name, t_func,
         module_name,
         package,
-        get_func_arg(t_func, class_name),
+        get_func_arg(t_func, class_name, module),
         calls,
         has_return_val(t_func))
     pfo.class_func = len(
@@ -464,4 +510,9 @@ def make_func_obj(
     pfo.mocks = get_mocks(calls, module, package, module_name)
     pfo.mocks = merge_mocks(pfo.mocks)
     pfo.class_name = class_name
+    for x in pfo.args:
+        for y in x.values:
+            if not y.is_literal and y.imports:
+                pfo.imports.append(y.imports)
+
     return pfo

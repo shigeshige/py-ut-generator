@@ -17,7 +17,7 @@ def test_get_variable_values():
     module = ast_util.create_ast(file_name)
     t_func = ast_util.get_function(module)[0]
 
-    ret = ast_util.get_variable_values(t_func, 'bbb')
+    ret = ast_util.get_variable_values(t_func, 'bbb', None)
     assert [i.value for i in ret] == [-1, 0, 1]
 
 
