@@ -10,6 +10,9 @@ from typing import Any, Dict, List, Optional
 
 @dataclass
 class Value:
+    """
+    Const value class.
+    """
     value: Any
     is_literal: bool = False
     description: str = ''
