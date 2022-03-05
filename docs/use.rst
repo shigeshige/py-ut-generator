@@ -8,6 +8,11 @@ Runs Tool
 
     pyutgen "Input File Name"
 
+    or
+
+    python -m pyutgenerator.run "Input File Name"
+
+
 
 Sample Input File
 -------------------

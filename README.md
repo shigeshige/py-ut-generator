@@ -30,6 +30,12 @@ https://pypi.org/project/pyutgenerator/
 pyutgen "Input File Name"
 ```
 
+or
+
+```
+python -m pyutgenerator.run  "Input File Name"
+```
+
 
 ### Sample input file
 
