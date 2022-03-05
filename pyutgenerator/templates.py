@@ -83,13 +83,14 @@ def parse_import(pkg, mdn, mock_open_flg=False, add_imports=None):
     """
     parse import
     """
+
     owenr = f'from {pkg} import {mdn}'
     if not pkg:
         owenr = f'import {mdn}'
     if not mock_open_flg:
-        return TEMP_IMPORT.format('\n'.join(sorted(add_imports)), owenr)
+        return TEMP_IMPORT.format('\n'.join(sorted(add_imports or [])), owenr)
 
-    return TEMP_IMPORT_OPEN.format('\n'.join(sorted(add_imports)), owenr)
+    return TEMP_IMPORT_OPEN.format('\n'.join(sorted(add_imports or [])), owenr)
 
 
 def parse_func_return(fpo: ParseFunc, run_txt):
@@ -131,7 +132,7 @@ def parse_func(fpo: ParseFunc):
     checks = ''
 
     if fpo.has_return:
-        checks = parse_assert(['ret'], fpo.mocks)
+        checks = parse_assert(['ret'], bool(fpo.mocks))
     inits = '\n'.join([parse_varis(arg) for arg in fpo.args])
 
     if fpo.mocks:
