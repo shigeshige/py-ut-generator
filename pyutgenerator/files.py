@@ -7,6 +7,8 @@ copyrigth https://github.com/shigeshige/py-ut-generator
 import os
 import pathlib
 
+from pyutgenerator.objects import Module
+
 
 def read_file(file_name):
     """
@@ -36,7 +38,7 @@ def write_file(file_name, txt, append=False):
         fip.write(txt)
 
 
-def get_package_moduel(file_name):
+def get_package_moduel(file_name) -> Module:
     """
     get package name and module name from file name.
     """
@@ -47,11 +49,4 @@ def get_package_moduel(file_name):
     pkg = pkg.replace('/', '.')
     if os.path.basename(file_name) == pkg:
         pkg = ''
-    return pkg, modu
-
-
-def get_test_file_name(pkg, mdn):
-    """
-    get test file name from input file.
-    """
-    return 'tests/' + pkg.replace('.', '/') + '/test_' + mdn + '.py'
+    return Module(pkg, modu)

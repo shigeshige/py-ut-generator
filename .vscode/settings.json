@@ -1,0 +1,22 @@
+{
+    "files.exclude": {
+        "**/__pycache__": true
+    },
+    "python.linting.pylintEnabled": true,
+    "python.linting.pylintPath": ".venv\\Scripts\\pylint.exe",
+    "python.formatting.autopep8Path": ".venv\\Scripts\\autopep8.exe",
+    "python.formatting.autopep8Args": [
+        "-a",
+        "-a"
+    ],
+    "editor.formatOnSave": true,
+    "python.testing.pytestEnabled": true,
+    "python.testing.pytestPath": ".venv\\Scripts\\pytest",
+    "python.testing.unittestEnabled": true,
+    "python.analysis.typeCheckingMode": "basic",
+    "[python]": {
+        "editor.tabSize": 4,
+        "outline.showModules": false,
+        "outline.showVariables": false
+    }
+}

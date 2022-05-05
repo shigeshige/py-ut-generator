@@ -9,6 +9,21 @@ from typing import Any, Dict, List, Optional
 
 
 @dataclass
+class Module:
+    """
+    基本のモジュール名、パッケージ
+    """
+    pakage_name: str = ''
+    module_name: str = ''
+
+    def get_test_file_name(self):
+        """
+        get test file name from input file.
+        """
+        return 'tests/' + self.pakage_name.replace('.', '/') + '/test_' + self.module_name + '.py'
+
+
+@dataclass
 class Value:
     """
     Const value class.
@@ -56,8 +71,9 @@ class MockFunc:
     """
     Mock Class
     """
-    mock_path: str
+    mock_path: str = ''
     has_return: bool = False
+    module: Module = Module()
     func_name: Optional[str] = None
     call_count: int = 1
     call_func: Optional[CallFunc] = None
@@ -71,8 +87,7 @@ class ParseFunc:
     """
     name: str
     t_func: Optional[ast.FunctionDef] = None
-    module_name: str = ''
-    pakcage: str = ''
+    module: Module = Module()
     args: List[FuncArg] = field(default_factory=list)
     calls: List[CallFunc] = field(default_factory=list)
     has_return: bool = False

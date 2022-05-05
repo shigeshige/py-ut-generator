@@ -33,7 +33,7 @@ pyutgen "Input File Name"
 or
 
 ```
-python -m pyutgenerator.run  "Input File Name"
+python -m pyutgenerator.run "Input File Name"
 ```
 
 

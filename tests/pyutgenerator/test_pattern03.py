@@ -28,9 +28,9 @@ def test_output():
     file_name = pattern03.__file__
     module = ast_util.create_ast(file_name)
 
-    pkg, mdn = files.get_package_moduel(file_name)
-    t_file = files.get_test_file_name(pkg, mdn)
-    ttt1 = run.make_test_code(module, pkg, mdn, True)
+    mmodule = files.get_package_moduel(file_name)
+    t_file = mmodule.get_test_file_name()
+    ttt1 = run.make_test_code(module, mmodule, True)
 
     ttt2 = files.read_file(t_file)
 

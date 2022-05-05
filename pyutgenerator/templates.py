@@ -6,7 +6,7 @@ copyrigth https://github.com/shigeshige/py-ut-generator
 
 from typing import List, cast
 
-from pyutgenerator.objects import FuncArg, MockFunc, ParseFunc, CallFunc
+from pyutgenerator.objects import FuncArg, MockFunc, Module, ParseFunc, CallFunc
 
 STR_PRE_FUNC = 'test_'
 
@@ -79,14 +79,14 @@ STR_ASSERT_TAB = '        assert {}'
 STR_TAB = '    '
 
 
-def parse_import(pkg, mdn, mock_open_flg=False, add_imports=None):
+def parse_import(module: Module, mock_open_flg=False, add_imports=None):
     """
     parse import
     """
 
-    owenr = f'from {pkg} import {mdn}'
-    if not pkg:
-        owenr = f'import {mdn}'
+    owenr = f'from {module.pakage_name} import {module.module_name}'
+    if not module.pakage_name:
+        owenr = f'import {module.module_name}'
     if not mock_open_flg:
         return TEMP_IMPORT.format('\n'.join(sorted(add_imports or [])), owenr)
 
@@ -107,7 +107,7 @@ def parse_func_return(fpo: ParseFunc, run_txt):
             else:
                 formatter = STR_RUNS
         else:
-            runs = STR_RUNS_PRE.format(fpo.module_name, fpo.class_name)
+            runs = STR_RUNS_PRE.format(fpo.module.module_name, fpo.class_name)
             if fpo.has_return:
                 runs += run_txt + STR_RUNS_RETURN.format('target',
                                                          fpo.get_name(), ', '.join(fpo.get_arg_str()))
@@ -121,7 +121,7 @@ def parse_func_return(fpo: ParseFunc, run_txt):
             # no return
             formatter = STR_RUNS
 
-    return run_txt + formatter.format(fpo.module_name, fpo.get_name(), ', '.join(fpo.get_arg_str()))
+    return run_txt + formatter.format(fpo.module.module_name, fpo.get_name(), ', '.join(fpo.get_arg_str()))
 
 
 def parse_func(fpo: ParseFunc):
@@ -222,9 +222,11 @@ def parse_mocks(mocks: List[MockFunc]):
     txt.append(STR_WITH)
     for i, moc in enumerate(mocks):
         if moc.open_flg:
-            txt.append(STR_MOCK_OPEN.format(moc.mock_path, 'm' + str(i + 1)))
+            txt.append(STR_MOCK_OPEN.format(moc.module.pakage_name + '.' +
+                       moc.module.module_name + '.' + moc.mock_path, 'm' + str(i + 1)))
         else:
-            txt.append(STR_MOCK.format(moc.mock_path, 'm' + str(i + 1)))
+            txt.append(STR_MOCK.format(moc.module.pakage_name + '.' +
+                       moc.module.module_name + '.' + moc.mock_path, 'm' + str(i + 1)))
         if len(mocks) - 1 == i:
             txt[-1] += ':'
         else:

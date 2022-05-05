@@ -8,7 +8,7 @@ import ast
 from typing import List, Optional, cast
 
 from pyutgenerator import const, files
-from pyutgenerator.objects import CallFunc, FuncArg, MockFunc, ParseFunc, Value
+from pyutgenerator.objects import CallFunc, FuncArg, MockFunc, Module, ParseFunc, Value
 
 
 def create_ast(file_name):
@@ -17,7 +17,7 @@ def create_ast(file_name):
     """
     src = files.read_file(file_name)
     if not src:
-        return None
+        return []
     return ast.parse(src, file_name)
 
 
@@ -338,19 +338,15 @@ def _get_import(name, module: ast.Module):
     return None
 
 
-def _create_mock_func(stm, clf: CallFunc, pkg, mdn) -> Optional[MockFunc]:
+def _create_mock_func(stm, clf: CallFunc, module: Module) -> Optional[MockFunc]:
     """
     create mocks
     """
     # from xxx import yyy
     if clf.module in list(map(lambda x: x.name, stm.names)):
         return MockFunc(
-            stm.module +
-            '.' +
-            clf.module +
-            '.' +
             clf.func_name,
-            clf.has_return)
+            clf.has_return, module)
     # from xxx.xxx import yyy
     if clf.func_name in list(map(lambda x: x.name, stm.names)):
         if clf.module:
@@ -360,62 +356,74 @@ def _create_mock_func(stm, clf: CallFunc, pkg, mdn) -> Optional[MockFunc]:
                 clf.module +
                 '.' +
                 clf.func_name,
-                clf.has_return)
-        return MockFunc(
-            pkg + '.' + mdn + '.' + clf.func_name, clf.has_return)
+                clf.has_return, module)
+        return MockFunc(clf.func_name, clf.has_return, module)
     return None
 
 
-def get_mocks(calls: List[CallFunc], module, pkg, mdn):
+def get_mocks(calls: List[CallFunc], asts, module):
     """
     呼び出し先のモックを作成する。
     """
     mocks: List[MockFunc] = []
     for clf in calls:
         ope_flg = False
-        for stm in ast.walk(module):
+        for stm in ast.walk(asts):
             if isinstance(stm, ast.Import):
                 names = get_import_names(stm)
-                if names == clf.func_name and not clf.module:
-                    # import xxx
-                    ope_flg = True
-                elif names == clf.module:
-                    # import xxx -> xxx.yyy.clf()
-                    if clf.module2:
-                        mck = MockFunc(
-                            pkg + '.' + mdn + '.' +
-                            clf.module + '.' + clf.module2, clf.has_return, clf.func_name)
-                        mck.call_func = clf
-                        mocks.append(mck)
-                    else:
-                        # import xxx -> xxx.clf()
-                        mck = MockFunc(
-                            clf.module + '.' +
-                            clf.func_name, clf.has_return)
-                        mck.call_func = clf
-                        mocks.append(mck)
-                    ope_flg = True
+                mck = get_mock_import(clf, names, module)
+                if mck:
+                    mocks.append(mck)
+
             if isinstance(stm, ast.ImportFrom):
-                mck2 = _create_mock_func(stm, clf, pkg, mdn)
+                mck2 = _create_mock_func(stm, clf, module)
                 if mck2 is not None:
                     mocks.append(mck2)
         if ope_flg:
             continue
-        for stm in get_function(module):
+        for stm in get_function(asts):
             # def xxx():
             if not clf.module and clf.func_name == stm.name:
-                mck = MockFunc(pkg + '.' + mdn + '.' + clf.func_name, clf.has_return)
+                mck = MockFunc(clf.func_name, clf.has_return, module)
                 mck.call_func = clf
                 mocks.append(mck)
                 ope_flg = True
         if not ope_flg and clf.func_name in const.BUILDINS:
             if const.FUNC_OPEN == clf.func_name:
-                mck = MockFunc(pkg + '.' + mdn + '.' + clf.func_name, clf.has_return)
+                mck = MockFunc(clf.func_name, clf.has_return, module)
                 mck.call_func = clf
                 mck.open_flg = True
                 mocks.append(mck)
 
     return mocks
+
+
+def get_mock_import(clf: CallFunc, names: str, module: Module):
+    """ import mock """
+    if names == clf.func_name and not clf.module:
+        # import xxx
+        pass
+    elif names == clf.module:
+        # import xxx -> xxx.yyy.clf()
+        if clf.module2:
+            mck = MockFunc(clf.module + '.' + clf.module2, clf.has_return, module, clf.func_name)
+            mck.call_func = clf
+            return mck
+        else:
+            # import xxx -> xxx.clf()
+            mck = MockFunc(
+                clf.module + '.' +
+                clf.func_name, clf.has_return, module)
+            mck.call_func = clf
+            return mck
+    elif clf.module2 and names == clf.module + '.' + clf.module2:
+        # import xxx.yyy
+        mck = MockFunc(
+            clf.module + '.' + clf.module2, clf.has_return, module, clf.func_name)
+        mck.call_func = clf
+        return mck
+
+    return None
 
 
 def merge_mocks(mocks: List[MockFunc]):
@@ -487,7 +495,7 @@ def get_import_names(stm: ast.Import):
 
 
 def make_func_obj(
-        t_func: ast.FunctionDef, package, module_name, module, class_name='') -> ParseFunc:
+        t_func: ast.FunctionDef, module: Module, asts, class_name='') -> ParseFunc:
     """
     関数解析
     """
@@ -496,9 +504,8 @@ def make_func_obj(
     calls_with(t_func, calls)
     pfo = ParseFunc(
         t_func.name, t_func,
-        module_name,
-        package,
-        get_func_arg(t_func, class_name, module),
+        module,
+        get_func_arg(t_func, bool(class_name), asts),
         calls,
         has_return_val(t_func))
     pfo.class_func = len(
@@ -507,7 +514,7 @@ def make_func_obj(
                 lambda x: getattr(x, 'id', None) in [
                     'staticmethod', 'classmethod'],
                 t_func.decorator_list))) != 0
-    pfo.mocks = get_mocks(calls, module, package, module_name)
+    pfo.mocks = get_mocks(calls, asts, module)
     pfo.mocks = merge_mocks(pfo.mocks)
     pfo.class_name = class_name
     for x in pfo.args:

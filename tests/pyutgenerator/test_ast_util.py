@@ -1,6 +1,6 @@
 
 import ast
-from pyutgenerator.objects import MockFunc
+from pyutgenerator.objects import MockFunc, Module
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -9,16 +9,22 @@ from pyutgenerator import ast_util
 from tests.pyutgenerator.data import td_funcs
 
 
-def _get_module():
+def _get_asts():
     return ast_util.create_ast(td_funcs.__file__)
 
 
 def _get_func():
-    return ast_util.create_ast(td_funcs.__file__).body[2]
+    asts = ast_util.create_ast(td_funcs.__file__)
+    if asts:
+        return asts.body[2]  # type: ignore
+    return None
 
 
 def _get_func2():
-    return ast_util.create_ast(td_funcs.__file__).body[3]
+    asts = ast_util.create_ast(td_funcs.__file__)
+    if asts:
+        return asts.body[3]  # type: ignore
+    return None
 
 
 def test_create_ast():
@@ -39,9 +45,9 @@ def test_get_function():
     test
     """
     # plan
-    module = _get_module()
+    asts = _get_asts()
     # do
-    ret = ast_util.get_function(module)
+    ret = ast_util.get_function(asts)
 
     # check
     assert ret[0].name == 'func1'
@@ -53,9 +59,9 @@ def test_get_function_class():
     test
     """
     # plan
-    module = _get_module()
+    asts = _get_asts()
     # do
-    ret = ast_util.get_function_class(module)
+    ret = ast_util.get_function_class(asts)
 
     # check
     assert ret[0][0].name == 'tf01'
@@ -69,7 +75,7 @@ def test_has_test_function():
     test
     """
     # plan
-    test_module = _get_module()
+    test_module = _get_asts()
     func = _get_func()
     # do
     ret = ast_util.has_test_function(test_module, func)
@@ -118,7 +124,7 @@ def test_get_func_arg():
     func = _get_func2()
 
     # do
-    ret = ast_util.get_func_arg(func, False, None)
+    ret = ast_util.get_func_arg(func, False, None)  # type: ignore
 
     # check
     assert [x.arg_name for x in ret] == ['prm1', 'prm2']
@@ -142,9 +148,9 @@ def test_get_funcs():
     test
     """
     # plan
-    module = _get_module()
+    asts = _get_asts()
     # do
-    ret = ast_util.get_funcs(module)
+    ret = ast_util.get_funcs(asts)
 
     # check
     assert ret[0].name == 'func1'
@@ -170,14 +176,16 @@ def test_get_mocks():
     """
     # plan
     calls = ast_util.get_calls(_get_func2())
-    module = _get_module()
+    asts = _get_asts()
     pkg = 'test'
     mdn = 'test2'
     # do
-    ret = ast_util.get_mocks(calls, module, pkg, mdn)
+    ret = ast_util.get_mocks(calls, asts, Module(pkg, mdn))
 
     # check
-    assert ret[0].mock_path == 'test.test2.func1'
+    assert ret[0].mock_path == 'func1'
+    assert ret[0].module.pakage_name == 'test'
+    assert ret[0].module.module_name == 'test2'
 
 
 def test_get_import_names():
@@ -187,10 +195,10 @@ def test_get_import_names():
     # plan
     stm = [
         x for x in ast.walk(
-            _get_module()) if x.__class__.__name__ == 'Import'][0]
+            _get_asts()) if x.__class__.__name__ == 'Import'][0]  # type: ignore
     # do
 
-    ret = ast_util.get_import_names(stm)
+    ret = ast_util.get_import_names(stm)  # type: ignore
 
     # check
     assert ret == 'os'
@@ -204,10 +212,10 @@ def test_make_func_obj():
     t_func = _get_func()
     pkg = 'pkg'
     mdn = 'module'
-    module = 'name'
+    asts = 'name'
     class_name = 'class'
     # do
-    ret = ast_util.make_func_obj(t_func, pkg, mdn, module, class_name)
+    ret = ast_util.make_func_obj(t_func, Module(pkg, mdn), asts, class_name)
 
     # check
     assert ret.name == 'func1'
@@ -215,9 +223,9 @@ def test_make_func_obj():
 
 def test_merge_mocks():
     mocks = [
-        MockFunc('aaaa', True, 'bbb'),
-        MockFunc('aaaa', True, 'bbb'),
-        MockFunc('aaaa', True, 'bbb'),
+        MockFunc('aaaa', True, Module(), 'bbb'),
+        MockFunc('aaaa', True, Module(), 'bbb'),
+        MockFunc('aaaa', True, Module(), 'bbb'),
     ]
 
     ret = ast_util.merge_mocks(mocks)
