@@ -7,7 +7,7 @@ copyrigth https://github.com/shigeshige/py-ut-generator
 import ast
 from pyutgenerator import ast_util, files, templates
 
-from pyutgenerator.objects import Module, ParseFunc
+from pyutgenerator.objects import Module, ParseFunc, RaiseEx
 
 
 def check(file_name):
@@ -17,7 +17,7 @@ def check(file_name):
     src = files.read_file(file_name)
     if not src:
         return True
-    return bool(ast.parse(src, file_name))
+    return not bool(ast.parse(src, file_name))
 
 
 def make_test_code(module: Module, renew: bool):
@@ -82,6 +82,19 @@ def has_test_function(test_module, func):
     return False
 
 
+def get_raise(t_func: ast.FunctionDef):
+    """
+    analyze raise.
+    """
+    rai = []
+    for stm in ast.walk(t_func):
+        if isinstance(stm, ast.Raise):
+            if isinstance(stm.exc, ast.Call) and isinstance(stm.exc.func, ast.Name):
+                # raise Exception('aaaaaaa')
+                rai.append(RaiseEx(stm.exc.func.id))
+    return rai
+
+
 def make_func_obj(
         t_func: ast.FunctionDef, module: Module, asts, class_name='') -> ParseFunc:
     """
@@ -104,6 +117,7 @@ def make_func_obj(
                 t_func.decorator_list))) != 0
     pfo.mocks = ast_util.get_mocks(calls, asts, module)
     pfo.mocks = ast_util.merge_mocks(pfo.mocks)
+    pfo.raises = get_raise(t_func)
     pfo.class_name = class_name
     for x in pfo.args:
         for y in x.values:

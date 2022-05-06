@@ -40,17 +40,10 @@ def {}():
 {}
 {}
 {}
+
 """
 
-TEMP_FUNC_CHECK = """
-    # check
-{}
-"""
-TEMP_FUNC_CHECK_TAB = """
-        # check
-{}
-"""
-
+TEMP_FUNC_CHECK = '    # check'
 
 STR_FROM_IMPORT = 'form {} import {}'
 
@@ -72,10 +65,11 @@ STR_MOCK_RETURN_MOCK2 = '        {}.return_value.{} = MagicMock()'
 STR_MOCK_RETURN_MUL = '        {}.side_effect = [{}]'
 STR_MOCK_FUNC = '        {}.{} = MagicMock(return_value=None)'
 STR_MOCK_FUNC2 = '{}.{} = MagicMock(return_value=None)'
+STR_RAISE = 'with pytest.raises({}) as {}:'
 
 STR_RC = '\n'
 STR_ASSERT = '    assert {}'
-STR_ASSERT_TAB = '        assert {}'
+STR_ASSERT_RAISE = '    assert str({}.value) == ""'
 STR_TAB = '    '
 
 
@@ -88,17 +82,22 @@ def parse_import(module: Module, mock_open_flg=False, add_imports=None):
     if not module.pakage_name:
         owenr = f'import {module.module_name}'
     if not mock_open_flg:
-        return TEMP_IMPORT.format('\n'.join(sorted(add_imports or [])), owenr)
+        return TEMP_IMPORT.format(STR_RC.join(sorted(add_imports or [])), owenr)
 
-    return TEMP_IMPORT_OPEN.format('\n'.join(sorted(add_imports or [])), owenr)
+    return TEMP_IMPORT_OPEN.format(STR_RC.join(sorted(add_imports or [])), owenr)
 
 
-def parse_func_return(fpo: ParseFunc, run_txt):
+def parse_func_return(fpo: ParseFunc, tabs: int):
     """
     parse return
     """
     runs = ''
     formatter = ''
+    rais = ''
+    _t = tabs
+    if fpo.raises:
+        _t += 1
+        rais = STR_RAISE.format(fpo.raises[0].excp, '_ex1')
     if fpo.class_name:
         # call for Class
         if fpo.class_func:
@@ -106,14 +105,19 @@ def parse_func_return(fpo: ParseFunc, run_txt):
                 formatter = STR_RUNS_RETURN
             else:
                 formatter = STR_RUNS
+            runs = _tab(_t) + formatter.format(fpo.module.module_name,
+                                               fpo.get_name(), ', '.join(fpo.get_arg_str()))
+            if fpo.raises:
+                runs = _tab(_t) + rais + STR_RC + runs
         else:
             runs = STR_RUNS_PRE.format(fpo.module.module_name, fpo.class_name)
+            if fpo.raises:
+                runs = runs + _tab(_t) + rais + STR_RC
             if fpo.has_return:
-                runs += run_txt + STR_RUNS_RETURN.format('target',
-                                                         fpo.get_name(), ', '.join(fpo.get_arg_str()))
+                runs += _tab(_t) + STR_RUNS_RETURN.format('target',
+                                                          fpo.get_name(), ', '.join(fpo.get_arg_str()))
             else:
-                runs += run_txt + STR_RUNS.format('target', fpo.get_name(), ', '.join(fpo.get_arg_str()))
-            return runs
+                runs += _tab(_t) + STR_RUNS.format('target', fpo.get_name(), ', '.join(fpo.get_arg_str()))
     else:
         if fpo.has_return:
             formatter = STR_RUNS_RETURN
@@ -121,32 +125,50 @@ def parse_func_return(fpo: ParseFunc, run_txt):
             # no return
             formatter = STR_RUNS
 
-    return run_txt + formatter.format(fpo.module.module_name, fpo.get_name(), ', '.join(fpo.get_arg_str()))
+        runs = _tab(_t) + formatter.format(fpo.module.module_name,
+                                           fpo.get_name(), ', '.join(fpo.get_arg_str()))
+        if fpo.raises:
+            runs = _tab(_t) + rais + STR_RC + runs
+    return runs
+
+
+def parse_func_check(fpo: ParseFunc):
+    """
+    parse check and assert
+    """
+
+    checks = ''
+    tabs = 0
+
+    if fpo.has_return:
+        checks = parse_assert(fpo, ['ret'], bool(fpo.mocks))
+
+    if fpo.mocks:
+        tabs = 1
+    if fpo.raises:
+        tabs += 1
+    txt_cheks = _tab(tabs) + TEMP_FUNC_CHECK + STR_RC + checks
+    return txt_cheks
 
 
 def parse_func(fpo: ParseFunc):
     """
     parse one function.
     """
-    run_txt = ''
-    checks = ''
+    tabs = 0
 
-    if fpo.has_return:
-        checks = parse_assert(['ret'], bool(fpo.mocks))
-    inits = '\n'.join([parse_varis(arg) for arg in fpo.args])
+    inits = STR_RC.join([parse_varis(arg) for arg in fpo.args])
 
     if fpo.mocks:
-        run_txt = STR_TAB
+        tabs = 1
 
-    runs = parse_func_return(fpo, run_txt)
+    runs = parse_func_return(fpo, tabs)
     mck = parse_mocks(fpo.mocks)
     mck_ret = parse_mocks_return(fpo.mocks)
-    if fpo.mocks:
-        txt_cheks = TEMP_FUNC_CHECK_TAB.format(checks)
-    else:
-        txt_cheks = TEMP_FUNC_CHECK.format(checks)
 
-    return TEMP_FUNC.format(STR_PRE_FUNC + fpo.name, inits, mck, mck_ret, runs) + txt_cheks
+    txt_cheks = parse_func_check(fpo)
+
+    return TEMP_FUNC.format(STR_PRE_FUNC + fpo.name, inits, mck, mck_ret, runs) + txt_cheks + STR_RC
 
 
 def parse_varis(func_arg: FuncArg):
@@ -161,6 +183,10 @@ def parse_varis(func_arg: FuncArg):
     elif func_arg.arg_type == 'dict':
         value = '{}'
     return STR_VARIS.format(func_arg.arg_name, value)
+
+
+def _tab(tabs: int):
+    return STR_TAB * tabs
 
 
 def _parse_mock_call(call_func: CallFunc, txt: str):
@@ -234,10 +260,15 @@ def parse_mocks(mocks: List[MockFunc]):
     return STR_RC.join(txt)
 
 
-def parse_assert(asserts, tab=False):
+def parse_assert(fpo: ParseFunc, asserts, tab=False):
     """
     parse assert.
     """
+    ras = ''
+    tabsp = ''
     if tab:
-        return STR_RC.join([STR_ASSERT_TAB.format(asst) for asst in asserts])
-    return STR_RC.join([STR_ASSERT.format(asst) for asst in asserts])
+        tabsp = STR_TAB
+    if fpo.raises:
+        ras = STR_RC + tabsp + STR_ASSERT_RAISE.format('_ex1')
+        tabsp += STR_TAB
+    return STR_RC.join([tabsp + STR_ASSERT.format(asst) for asst in asserts]) + ras

@@ -13,3 +13,7 @@
 ## 2022-05-05 v0.11.1
 
 * refactor
+
+## 2022-05-06 v0.12.0
+
+* support raise Exception

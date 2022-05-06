@@ -82,6 +82,14 @@ class MockFunc:
 
 
 @dataclass
+class RaiseEx:
+    """
+    raise info
+    """
+    excp: str = 'Exception'
+
+
+@dataclass
 class ParseFunc:
     """
     Parse Func Obj
@@ -94,6 +102,7 @@ class ParseFunc:
     has_return: bool = False
     class_name: str = ''
     mocks: List[MockFunc] = field(default_factory=list)
+    raises: Optional[List[RaiseEx]] = None
     class_func: bool = False
     imports: List[str] = field(default_factory=list)
 
