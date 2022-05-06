@@ -33,7 +33,7 @@ def test_func1():
 class T001:
     def tf01(self):
         aaaa = 1
-        os.path('/')
+        os.path('/')  # type: ignore
         return aaaa
 
     @classmethod

@@ -8,7 +8,7 @@ import ast
 from typing import List, Optional, cast
 
 from pyutgenerator import const, files
-from pyutgenerator.objects import CallFunc, FuncArg, MockFunc, Module, ParseFunc, Value
+from pyutgenerator.objects import CallFunc, FuncArg, MockFunc, Module, Value
 
 
 def create_ast(file_name):
@@ -17,7 +17,7 @@ def create_ast(file_name):
     """
     src = files.read_file(file_name)
     if not src:
-        return []
+        return None
     return ast.parse(src, file_name)
 
 
@@ -154,9 +154,9 @@ def _get_value(func, stm: ast.expr, is_const_only: bool = False,
     if isinstance(stm, ast.UnaryOp) and isinstance(stm.operand, ast.Num):
         # -1
         return Value(-stm.operand.n, True)
-    if isinstance(stm, ast.Index) and isinstance(stm.value, ast.Str):
+    if isinstance(stm, ast.Index) and isinstance(stm.value, ast.Str):  # type: ignore
         # aaa['K1']
-        return Value(stm.value.s, True)
+        return Value(stm.value.s, True)  # type: ignore
     return None
 
 
@@ -492,34 +492,3 @@ def get_import_names(stm: ast.Import):
     join import names.
     """
     return '.'.join([x.name for x in stm.names])
-
-
-def make_func_obj(
-        t_func: ast.FunctionDef, module: Module, asts, class_name='') -> ParseFunc:
-    """
-    関数解析
-    """
-    calls = get_calls(t_func)
-    calls = analyze_call_for_call(calls, t_func)
-    calls_with(t_func, calls)
-    pfo = ParseFunc(
-        t_func.name, t_func,
-        module,
-        get_func_arg(t_func, bool(class_name), asts),
-        calls,
-        has_return_val(t_func))
-    pfo.class_func = len(
-        list(
-            filter(
-                lambda x: getattr(x, 'id', None) in [
-                    'staticmethod', 'classmethod'],
-                t_func.decorator_list))) != 0
-    pfo.mocks = get_mocks(calls, asts, module)
-    pfo.mocks = merge_mocks(pfo.mocks)
-    pfo.class_name = class_name
-    for x in pfo.args:
-        for y in x.values:
-            if not y.is_literal and y.imports:
-                pfo.imports.append(y.imports)
-
-    return pfo

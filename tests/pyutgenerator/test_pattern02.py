@@ -5,7 +5,7 @@ test 002
 
 from tests.pyutgenerator.data import pattern02
 
-from pyutgenerator import ast_util, files, run
+from pyutgenerator import ast_util, code_analysis, files, run
 
 
 def test_01():
@@ -34,7 +34,7 @@ def test_output():
 
     mmodule = files.get_package_moduel(file_name)
     t_file = mmodule.get_test_file_name()
-    ttt1 = run.make_test_code(module, mmodule, True)
+    ttt1 = code_analysis.make_test_code(mmodule, True)
 
     ttt2 = files.read_file(t_file)
 

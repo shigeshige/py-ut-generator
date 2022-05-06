@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from pyutgenerator import ast_util
+from pyutgenerator import ast_util, code_analysis
 from tests.pyutgenerator.data import td_funcs
 
 
@@ -215,7 +215,7 @@ def test_make_func_obj():
     asts = 'name'
     class_name = 'class'
     # do
-    ret = ast_util.make_func_obj(t_func, Module(pkg, mdn), asts, class_name)
+    ret = code_analysis.make_func_obj(t_func, Module(pkg, mdn), asts, class_name)
 
     # check
     assert ret.name == 'func1'

@@ -15,6 +15,7 @@ class Module:
     """
     pakage_name: str = ''
     module_name: str = ''
+    file_name: str = ''
 
     def get_test_file_name(self):
         """

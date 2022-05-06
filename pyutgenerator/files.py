@@ -49,4 +49,4 @@ def get_package_moduel(file_name) -> Module:
     pkg = pkg.replace('/', '.')
     if os.path.basename(file_name) == pkg:
         pkg = ''
-    return Module(pkg, modu)
+    return Module(pkg, modu, file_name)
